@@ -17,7 +17,7 @@ class LimitConfigurationController(QDialog):
         self.ui.botaoAplicarLimite.clicked.connect(self.validar_e_aplicar)
         self.ui.botaoCancelarLimite.clicked.connect(self.reject)
 
-    # 2. Nova função: Faz a varredura na tabela quando o usuário clica em Aplicar
+    # Faz a varredura na tabela quando o usuário clica em Aplicar
     def validar_e_aplicar(self):
         # Verifica se há pelo menos uma linha
         if self.ui.tableWidget.rowCount() == 0:
