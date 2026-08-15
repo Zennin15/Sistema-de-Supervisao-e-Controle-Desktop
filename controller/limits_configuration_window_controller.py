@@ -37,12 +37,11 @@ class LimitConfigurationController(QDialog):
 
             # Valida cada célula individualmente (passando contexto para a mensagem)
             if not self.validar_celula(tensao, "Tensão", row):
-                return  # Interrompe a função, a janela NÃO fecha
+                return  # Interrompe a função, a janela nao fecha
             
             if not self.validar_celula(corrente, "Corrente", row):
-                return  # Interrompe a função, a janela NÃO fecha
+                return  # Interrompe a função, a janela não fecha
 
-        # 3. Se o loop terminar sem esbarrar em nenhum 'return', os dados são válidos!
         self.accept()
 
     def validar_celula(self, texto, nome_coluna, linha):
