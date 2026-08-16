@@ -1,0 +1,215 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<ui version="4.0">
+ <class>DialogSerial</class>
+ <widget class="QDialog" name="DialogSerial">
+  <property name="geometry">
+   <rect>
+    <x>0</x>
+    <y>0</y>
+    <width>420</width>
+    <height>300</height>
+   </rect>
+  </property>
+  <property name="windowTitle">
+   <string>Configuração da Comunicação Serial</string>
+  </property>
+  <widget class="QLabel" name="lblPortaCom">
+   <property name="geometry">
+    <rect>
+     <x>20</x>
+     <y>20</y>
+     <width>111</width>
+     <height>20</height>
+    </rect>
+   </property>
+   <property name="text">
+    <string>Porta COM</string>
+   </property>
+  </widget>
+  <widget class="QComboBox" name="cbPortaCom">
+   <property name="geometry">
+    <rect>
+     <x>160</x>
+     <y>18</y>
+     <width>220</width>
+     <height>24</height>
+    </rect>
+   </property>
+   <item>
+    <property name="text">
+     <string>COM1</string>
+    </property>
+   </item>
+   <item>
+    <property name="text">
+     <string>COM2</string>
+    </property>
+   </item>
+   <item>
+    <property name="text">
+     <string>COM3</string>
+    </property>
+   </item>
+   <item>
+    <property name="text">
+     <string>COM4</string>
+    </property>
+   </item>
+  </widget>
+  <widget class="QLabel" name="lblBaudRate">
+   <property name="geometry">
+    <rect>
+     <x>20</x>
+     <y>60</y>
+     <width>111</width>
+     <height>20</height>
+    </rect>
+   </property>
+   <property name="text">
+    <string>Baud Rate</string>
+   </property>
+  </widget>
+  <widget class="QComboBox" name="cbBaudRate">
+   <property name="geometry">
+    <rect>
+     <x>160</x>
+     <y>58</y>
+     <width>220</width>
+     <height>24</height>
+    </rect>
+   </property>
+   <item>
+    <property name="text">
+     <string>9600</string>
+    </property>
+   </item>
+   <item>
+    <property name="text">
+     <string>115200</string>
+    </property>
+   </item>
+  </widget>
+  <widget class="QLabel" name="lblTimeout">
+   <property name="geometry">
+    <rect>
+     <x>20</x>
+     <y>100</y>
+     <width>111</width>
+     <height>20</height>
+    </rect>
+   </property>
+   <property name="text">
+    <string>Timeout (s)</string>
+   </property>
+  </widget>
+  <widget class="QSpinBox" name="spinTimeout">
+   <property name="geometry">
+    <rect>
+     <x>160</x>
+     <y>98</y>
+     <width>100</width>
+     <height>24</height>
+    </rect>
+   </property>
+   <property name="minimum">
+    <number>1</number>
+   </property>
+   <property name="maximum">
+    <number>60</number>
+   </property>
+   <property name="value">
+    <number>5</number>
+   </property>
+  </widget>
+  <widget class="QLabel" name="lblStatus">
+   <property name="geometry">
+    <rect>
+     <x>20</x>
+     <y>150</y>
+     <width>81</width>
+     <height>20</height>
+    </rect>
+   </property>
+   <property name="text">
+    <string>Status:</string>
+   </property>
+  </widget>
+  <widget class="QLabel" name="lblStatusValor">
+   <property name="geometry">
+    <rect>
+     <x>100</x>
+     <y>150</y>
+     <width>200</width>
+     <height>20</height>
+    </rect>
+   </property>
+   <property name="styleSheet">
+    <string notr="true">color: #c0392b; font-weight: bold;</string>
+   </property>
+   <property name="text">
+    <string>Desconectado</string>
+   </property>
+  </widget>
+  <widget class="QPushButton" name="btnConectar">
+   <property name="geometry">
+    <rect>
+     <x>160</x>
+     <y>200</y>
+     <width>100</width>
+     <height>30</height>
+    </rect>
+   </property>
+   <property name="text">
+    <string>Conectar</string>
+   </property>
+  </widget>
+  <widget class="QPushButton" name="btnDesconectar">
+   <property name="geometry">
+    <rect>
+     <x>280</x>
+     <y>200</y>
+     <width>100</width>
+     <height>30</height>
+    </rect>
+   </property>
+   <property name="enabled">
+    <bool>false</bool>
+   </property>
+   <property name="text">
+    <string>Desconectar</string>
+   </property>
+  </widget>
+  <widget class="QPushButton" name="btnFechar">
+   <property name="geometry">
+    <rect>
+     <x>160</x>
+     <y>250</y>
+     <width>220</width>
+     <height>28</height>
+    </rect>
+   </property>
+   <property name="text">
+    <string>Fechar</string>
+   </property>
+  </widget>
+ </widget>
+ <resources/>
+ <connections>
+  <connection>
+   <sender>btnFechar</sender>
+   <signal>clicked()</signal>
+   <receiver>DialogSerial</receiver>
+   <slot>close()</slot>
+   <hints>
+    <hint type="sourcelabel">
+     <x>270</x>
+     <y>264</y>
+    </hint>
+    <hint type="destinationlabel">
+     <x>210</x>
+     <y>290</y>
+    </hint>
+   </hints>
+  </connection>
+ </connections>
+</ui>
