@@ -15,20 +15,27 @@ from PySide6.QtGui import (QBrush, QColor, QConicalGradient, QCursor,
     QFont, QFontDatabase, QGradient, QIcon,
     QImage, QKeySequence, QLinearGradient, QPainter,
     QPalette, QPixmap, QRadialGradient, QTransform)
-from PySide6.QtWidgets import (QApplication, QMainWindow, QMenuBar, QSizePolicy,
-    QStatusBar, QWidget)
+from PySide6.QtWidgets import (QApplication, QHeaderView, QMainWindow, QMenuBar,
+    QPushButton, QSizePolicy, QStatusBar, QTableWidget,
+    QTableWidgetItem, QWidget)
 
 class Ui_MainWindow(object):
     def setupUi(self, MainWindow):
         if not MainWindow.objectName():
             MainWindow.setObjectName(u"MainWindow")
-        MainWindow.resize(859, 600)
+        MainWindow.resize(817, 800)
         self.centralwidget = QWidget(MainWindow)
         self.centralwidget.setObjectName(u"centralwidget")
+        self.btnAbrirConfig = QPushButton(self.centralwidget)
+        self.btnAbrirConfig.setObjectName(u"btnAbrirConfig")
+        self.btnAbrirConfig.setGeometry(QRect(10, 100, 101, 24))
+        self.tableEventos = QTableWidget(self.centralwidget)
+        self.tableEventos.setObjectName(u"tableEventos")
+        self.tableEventos.setGeometry(QRect(160, 30, 471, 192))
         MainWindow.setCentralWidget(self.centralwidget)
         self.menubar = QMenuBar(MainWindow)
         self.menubar.setObjectName(u"menubar")
-        self.menubar.setGeometry(QRect(0, 0, 859, 33))
+        self.menubar.setGeometry(QRect(0, 0, 817, 22))
         MainWindow.setMenuBar(self.menubar)
         self.statusbar = QStatusBar(MainWindow)
         self.statusbar.setObjectName(u"statusbar")
@@ -41,5 +48,6 @@ class Ui_MainWindow(object):
 
     def retranslateUi(self, MainWindow):
         MainWindow.setWindowTitle(QCoreApplication.translate("MainWindow", u"MainWindow", None))
+        self.btnAbrirConfig.setText(QCoreApplication.translate("MainWindow", u"Configura\u00e7\u00f5es", None))
     # retranslateUi
 

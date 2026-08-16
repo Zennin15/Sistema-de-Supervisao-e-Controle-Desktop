@@ -6,7 +6,7 @@
    <rect>
     <x>0</x>
     <y>0</y>
-    <width>903</width>
+    <width>907</width>
     <height>434</height>
    </rect>
   </property>
@@ -55,7 +55,7 @@
     <string>Limite de Tensão (V)</string>
    </property>
   </widget>
-  <widget class="QDoubleSpinBox" name="doubleSpinBox">
+  <widget class="QDoubleSpinBox" name="spinCorrente">
    <property name="geometry">
     <rect>
      <x>270</x>
@@ -64,8 +64,11 @@
      <height>22</height>
     </rect>
    </property>
+   <property name="maximum">
+    <double>100.989999999999995</double>
+   </property>
   </widget>
-  <widget class="QDoubleSpinBox" name="doubleSpinBox_2">
+  <widget class="QDoubleSpinBox" name="spinTensao">
    <property name="geometry">
     <rect>
      <x>270</x>
@@ -73,6 +76,9 @@
      <width>62</width>
      <height>22</height>
     </rect>
+   </property>
+   <property name="maximum">
+    <double>100.989999999999995</double>
    </property>
   </widget>
  </widget>

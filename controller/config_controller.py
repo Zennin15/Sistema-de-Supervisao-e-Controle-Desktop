@@ -1,6 +1,6 @@
 from PySide6.QtWidgets import QDialog, QMessageBox
-from PySide6.QtCore import Signal, QFile
-from PySide6.QtUiTools import QUiLoader
+from PySide6.QtCore import Signal
+from ui.config_dialog import Ui_Dialog
 
 class ConfigDialogController(QDialog):
     # Sinal personalizado para enviar as regras para a janela principal
@@ -9,12 +9,9 @@ class ConfigDialogController(QDialog):
     def __init__(self, parent=None):
         super().__init__(parent)
         
-        # Carrega a interface gráfica do arquivo .ui
-        loader = QUiLoader()
-        ui_file = QFile("ui/config_dialog.ui")
-        ui_file.open(QFile.ReadOnly)
-        self.ui = loader.load(ui_file, self)
-        ui_file.close()
+        # Instancia a interface gerada a partir do config_dialog.ui
+        self.ui = Ui_Dialog()
+        self.ui.setupUi(self)
 
         # Conecta os botões padrão (OK / Cancelar) do modal
         if hasattr(self.ui, 'buttonBox'):
@@ -23,11 +20,17 @@ class ConfigDialogController(QDialog):
 
     def salvar_regras(self):
         try:
-            # Resgata os valores informados nos campos
-            limite_corrente = float(self.ui.inputCorrente.value() if hasattr(self.ui.inputCorrente, 'value') else self.ui.inputCorrente.text())
-            limite_tensao = float(self.ui.inputTensao.value() if hasattr(self.ui.inputTensao, 'value') else self.ui.inputTensao.text())
+            # Tenta ler os componentes pelos nomes atribuídos na UI
+            spin_corrente = getattr(self.ui, 'spinCorrente', None) or getattr(self.ui, 'inputCorrente', None) or getattr(self.ui, 'doubleSpinBox', None)
+            spin_tensao = getattr(self.ui, 'spinTensao', None) or getattr(self.ui, 'inputTensao', None) or getattr(self.ui, 'doubleSpinBox_2', None)
 
-            # Validação: os limites devem ser positivos
+            if not spin_corrente or not spin_tensao:
+                QMessageBox.critical(self, "Erro", "Campos de entrada não foram encontrados na interface.")
+                return
+
+            limite_corrente = float(spin_corrente.value())
+            limite_tensao = float(spin_tensao.value())
+
             if limite_corrente <= 0 or limite_tensao <= 0:
                 QMessageBox.warning(self, "Aviso de Validação", "Os limites devem ser maiores que zero.")
                 return
@@ -37,9 +40,8 @@ class ConfigDialogController(QDialog):
                 "tensao_max": limite_tensao
             }
 
-            # Emite o sinal com os dados e fecha o modal
             self.regras_salvas.emit(dados_regras)
             self.accept()
 
-        except ValueError:
-            QMessageBox.critical(self, "Erro de Entrada", "Insira valores numéricos válidos.")
+        except Exception as e:
+            QMessageBox.critical(self, "Erro de Entrada", f"Insira valores numéricos válidos. Detalhes: {e}")
