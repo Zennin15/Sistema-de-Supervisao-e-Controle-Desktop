@@ -15,8 +15,9 @@ from PySide6.QtGui import (QBrush, QColor, QConicalGradient, QCursor,
     QFont, QFontDatabase, QGradient, QIcon,
     QImage, QKeySequence, QLinearGradient, QPainter,
     QPalette, QPixmap, QRadialGradient, QTransform)
-from PySide6.QtWidgets import (QApplication, QHBoxLayout, QMainWindow, QMenuBar,
-    QPushButton, QSizePolicy, QStatusBar, QWidget)
+from PySide6.QtWidgets import (QApplication, QHBoxLayout, QHeaderView, QMainWindow,
+    QMenuBar, QPushButton, QSizePolicy, QStatusBar,
+    QTableWidget, QTableWidgetItem, QWidget)
 
 class Ui_MainWindow(object):
     def setupUi(self, MainWindow):
@@ -41,20 +42,23 @@ class Ui_MainWindow(object):
 
         self.horizontalLayout.addWidget(self.pushButton_2)
 
-        self.botaoLimite = QPushButton(self.horizontalLayoutWidget)
-        self.botaoLimite.setObjectName(u"botaoLimite")
+        self.pushButton_4 = QPushButton(self.horizontalLayoutWidget)
+        self.pushButton_4.setObjectName(u"pushButton_4")
 
-        self.horizontalLayout.addWidget(self.botaoLimite)
+        self.horizontalLayout.addWidget(self.pushButton_4)
 
         self.pushButton = QPushButton(self.horizontalLayoutWidget)
         self.pushButton.setObjectName(u"pushButton")
 
         self.horizontalLayout.addWidget(self.pushButton)
 
+        self.tableEventos = QTableWidget(self.centralwidget)
+        self.tableEventos.setObjectName(u"tableEventos")
+        self.tableEventos.setGeometry(QRect(120, 30, 621, 381))
         MainWindow.setCentralWidget(self.centralwidget)
         self.menubar = QMenuBar(MainWindow)
         self.menubar.setObjectName(u"menubar")
-        self.menubar.setGeometry(QRect(0, 0, 859, 33))
+        self.menubar.setGeometry(QRect(0, 0, 859, 22))
         MainWindow.setMenuBar(self.menubar)
         self.statusbar = QStatusBar(MainWindow)
         self.statusbar.setObjectName(u"statusbar")
@@ -69,7 +73,7 @@ class Ui_MainWindow(object):
         MainWindow.setWindowTitle(QCoreApplication.translate("MainWindow", u"MainWindow", None))
         self.pushButton_3.setText(QCoreApplication.translate("MainWindow", u"Dashboard", None))
         self.pushButton_2.setText(QCoreApplication.translate("MainWindow", u"Configura\u00e7\u00f5es", None))
-        self.botaoLimite.setText(QCoreApplication.translate("MainWindow", u"Limites", None))
+        self.pushButton_4.setText(QCoreApplication.translate("MainWindow", u"Limites", None))
         self.pushButton.setText(QCoreApplication.translate("MainWindow", u"Hist\u00f3rico", None))
     # retranslateUi
 

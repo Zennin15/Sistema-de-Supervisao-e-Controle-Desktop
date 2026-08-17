@@ -54,6 +54,16 @@
      </item>
     </layout>
    </widget>
+   <widget class="QTableWidget" name="tableEventos">
+    <property name="geometry">
+     <rect>
+      <x>120</x>
+      <y>30</y>
+      <width>621</width>
+      <height>381</height>
+     </rect>
+    </property>
+   </widget>
   </widget>
   <widget class="QMenuBar" name="menubar">
    <property name="geometry">
@@ -61,7 +71,7 @@
      <x>0</x>
      <y>0</y>
      <width>859</width>
-     <height>33</height>
+     <height>22</height>
     </rect>
    </property>
   </widget>
