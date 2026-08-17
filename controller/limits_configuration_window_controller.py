@@ -1,25 +1,34 @@
-from PySide6.QtWidgets import QMainWindow, QDialog, QTableWidgetItem, QMessageBox
+from PySide6.QtWidgets import QDialog, QMessageBox, QTableWidgetItem
+from PySide6.QtCore import Signal
 from ui.limits_configuration_window import Ui_Dialog
 
-class LimitConfigurationController(QDialog):
+class LimitsConfigurationWindowController(QDialog):
+    # Sinal personalizado para enviar a lista de limites salvos para a tela principal
+    regras_salvas = Signal(list)
+
     def __init__(self, parent=None):
         super().__init__(parent)
         
         self.ui = Ui_Dialog()
         self.ui.setupUi(self)
 
-        self.ui.tableWidget.setColumnCount(2)
-        self.ui.tableWidget.setHorizontalHeaderLabels(["Tensão", "Corrente"])
+        # Configura as colunas da tabela de limites
+        if hasattr(self.ui, 'tableWidget'):
+            self.ui.tableWidget.setColumnCount(2)
+            self.ui.tableWidget.setHorizontalHeaderLabels(["Tensão", "Corrente"])
 
-        self.ui.botaoAdicionarLimite.clicked.connect(self.new_row)
-        self.ui.botaoRemoverLimite.clicked.connect(self.remove_row)
+        # Conecta os botões da interface
+        if hasattr(self.ui, 'botaoAdicionarLimite'):
+            self.ui.botaoAdicionarLimite.clicked.connect(self.new_row)
+        if hasattr(self.ui, 'botaoRemoverLimite'):
+            self.ui.botaoRemoverLimite.clicked.connect(self.remove_row)
+        if hasattr(self.ui, 'botaoAplicarLimite'):
+            self.ui.botaoAplicarLimite.clicked.connect(self.validar_e_aplicar)
+        if hasattr(self.ui, 'botaoCancelarLimite'):
+            self.ui.botaoCancelarLimite.clicked.connect(self.reject)
 
-        self.ui.botaoAplicarLimite.clicked.connect(self.validar_e_aplicar)
-        self.ui.botaoCancelarLimite.clicked.connect(self.reject)
-
-    # Faz a varredura na tabela quando o usuário clica em Aplicar
     def validar_e_aplicar(self):
-        # Verifica se há pelo menos uma linha
+        """Faz a varredura e validação na tabela quando o usuário clica em Aplicar."""
         if self.ui.tableWidget.rowCount() == 0:
             QMessageBox.information(self, "Aviso", "Adicione pelo menos uma regra de limite.")
             return
@@ -31,17 +40,20 @@ class LimitConfigurationController(QDialog):
             tensao = item_tensao.text().strip() if item_tensao else ""
             corrente = item_corrente.text().strip() if item_corrente else ""
 
-            # Se a linha inteira estiver vazia, podemos ignorá-la ou excluí-la
+            # Se a linha inteira estiver vazia, pode ignorar
             if tensao == "" and corrente == "":
                 continue
 
-            # Valida cada célula individualmente (passando contexto para a mensagem)
+            # Valida cada célula individualmente
             if not self.validar_celula(tensao, "Tensão", row):
-                return  # Interrompe a função, a janela nao fecha
+                return
             
             if not self.validar_celula(corrente, "Corrente", row):
-                return  # Interrompe a função, a janela não fecha
+                return
 
+        # Emite o sinal enviando os dados para a janela principal e fecha o modal
+        dados = self.get_dados()
+        self.regras_salvas.emit(dados)
         self.accept()
 
     def validar_celula(self, texto, nome_coluna, linha):
@@ -50,7 +62,10 @@ class LimitConfigurationController(QDialog):
             return False
     
         try:
-            float(texto)
+            val = float(texto)
+            if val <= 0:
+                QMessageBox.warning(self, "Valor Inválido", f"O valor de {nome_coluna} na linha {linha + 1} deve ser maior que zero.")
+                return False
             return True 
         
         except ValueError:
@@ -64,8 +79,8 @@ class LimitConfigurationController(QDialog):
             current_rows = self.ui.tableWidget.rowCount()
             self.ui.tableWidget.insertRow(current_rows)
             
-            self.ui.tableWidget.setItem(current_rows, 0, QTableWidgetItem(limite["Tensao"]))
-            self.ui.tableWidget.setItem(current_rows, 1, QTableWidgetItem(limite["Corrente"]))
+            self.ui.tableWidget.setItem(current_rows, 0, QTableWidgetItem(str(limite["Tensao"])))
+            self.ui.tableWidget.setItem(current_rows, 1, QTableWidgetItem(str(limite["Corrente"])))
 
     def new_row(self): 
         current_rows = self.ui.tableWidget.rowCount()

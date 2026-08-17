@@ -21,7 +21,7 @@ from PySide6.QtWidgets import (QApplication, QDialog, QHeaderView, QPushButton,
 class Ui_Dialog(object):
     def setupUi(self, Dialog):
         if not Dialog.objectName():
-            Dialog.setObjectName(u"Configurar Limites")
+            Dialog.setObjectName(u"Dialog")
         Dialog.resize(400, 300)
         self.tableWidget = QTableWidget(Dialog)
         self.tableWidget.setObjectName(u"tableWidget")
@@ -45,7 +45,7 @@ class Ui_Dialog(object):
     # setupUi
 
     def retranslateUi(self, Dialog):
-        Dialog.setWindowTitle(QCoreApplication.translate("Configurar Limites", u"Configurar Limites", None))
+        Dialog.setWindowTitle(QCoreApplication.translate("Dialog", u"Dialog", None))
         self.botaoAdicionarLimite.setText(QCoreApplication.translate("Dialog", u"Adicionar", None))
         self.botaoAplicarLimite.setText(QCoreApplication.translate("Dialog", u"Aplicar", None))
         self.botaoCancelarLimite.setText(QCoreApplication.translate("Dialog", u"Cancelar", None))
