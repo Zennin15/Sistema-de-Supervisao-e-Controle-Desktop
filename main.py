@@ -13,5 +13,5 @@ def main():
     # Mantém o programa rodando até o usuário fechar
     sys.exit(app.exec())
 
-if __name__ == "__main__":
+if __name__ == "__main__": 
     main()

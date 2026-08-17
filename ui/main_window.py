@@ -22,7 +22,7 @@ from PySide6.QtWidgets import (QApplication, QHBoxLayout, QHeaderView, QMainWind
 class Ui_MainWindow(object):
     def setupUi(self, MainWindow):
         if not MainWindow.objectName():
-            MainWindow.setObjectName(u"MainWindow")
+            MainWindow.setObjectName(u"Sistema de Supervisão e Controle")
         MainWindow.resize(859, 600)
         self.centralwidget = QWidget(MainWindow)
         self.centralwidget.setObjectName(u"centralwidget")
@@ -70,7 +70,7 @@ class Ui_MainWindow(object):
     # setupUi
 
     def retranslateUi(self, MainWindow):
-        MainWindow.setWindowTitle(QCoreApplication.translate("MainWindow", u"MainWindow", None))
+        MainWindow.setWindowTitle(QCoreApplication.translate("Sistema de Supervisão e Controle", u"Sistema de Supervisão e Controle", None))
         self.pushButton_3.setText(QCoreApplication.translate("MainWindow", u"Dashboard", None))
         self.pushButton_2.setText(QCoreApplication.translate("MainWindow", u"Configura\u00e7\u00f5es", None))
         self.pushButton_4.setText(QCoreApplication.translate("MainWindow", u"Limites", None))

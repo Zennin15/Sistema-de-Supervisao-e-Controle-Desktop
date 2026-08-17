@@ -17,13 +17,13 @@ from PySide6.QtGui import (QBrush, QColor, QConicalGradient, QCursor,
     QPalette, QPixmap, QRadialGradient, QTransform)
 from PySide6.QtWidgets import (QApplication, QDialog, QGroupBox, QHBoxLayout,
     QLCDNumber, QLabel, QPushButton, QSizePolicy,
-    QSpacerItem, QVBoxLayout, QWidget)
+    QSlider, QSpacerItem, QVBoxLayout, QWidget)
 
 class Ui_DashboardWindow(object):
     def setupUi(self, DashboardWindow):
         if not DashboardWindow.objectName():
             DashboardWindow.setObjectName(u"DashboardWindow")
-        DashboardWindow.resize(950, 680)
+        DashboardWindow.resize(980, 780)
         self.verticalLayoutPrincipal = QVBoxLayout(DashboardWindow)
         self.verticalLayoutPrincipal.setObjectName(u"verticalLayoutPrincipal")
         self.labelTitulo = QLabel(DashboardWindow)
@@ -107,8 +107,98 @@ class Ui_DashboardWindow(object):
 
         self.horizontalLayoutIndicadores.addWidget(self.groupBoxPotencia)
 
+        self.groupBoxDisjuntor = QGroupBox(DashboardWindow)
+        self.groupBoxDisjuntor.setObjectName(u"groupBoxDisjuntor")
+        self.verticalLayoutDisjuntor = QVBoxLayout(self.groupBoxDisjuntor)
+        self.verticalLayoutDisjuntor.setObjectName(u"verticalLayoutDisjuntor")
+        self.horizontalLayoutLed = QHBoxLayout()
+        self.horizontalLayoutLed.setObjectName(u"horizontalLayoutLed")
+        self.horizontalSpacerLedEsq = QSpacerItem(10, 20, QSizePolicy.Policy.Expanding, QSizePolicy.Policy.Minimum)
+
+        self.horizontalLayoutLed.addItem(self.horizontalSpacerLedEsq)
+
+        self.labelLedDisjuntor = QLabel(self.groupBoxDisjuntor)
+        self.labelLedDisjuntor.setObjectName(u"labelLedDisjuntor")
+        self.labelLedDisjuntor.setMinimumSize(QSize(42, 42))
+        self.labelLedDisjuntor.setMaximumSize(QSize(42, 42))
+        self.labelLedDisjuntor.setStyleSheet(u"QLabel { background-color: #00E676; border: 2px solid #0a3d1f; border-radius: 21px; }")
+
+        self.horizontalLayoutLed.addWidget(self.labelLedDisjuntor)
+
+        self.horizontalSpacerLedDir = QSpacerItem(10, 20, QSizePolicy.Policy.Expanding, QSizePolicy.Policy.Minimum)
+
+        self.horizontalLayoutLed.addItem(self.horizontalSpacerLedDir)
+
+
+        self.verticalLayoutDisjuntor.addLayout(self.horizontalLayoutLed)
+
+        self.labelTextoDisjuntor = QLabel(self.groupBoxDisjuntor)
+        self.labelTextoDisjuntor.setObjectName(u"labelTextoDisjuntor")
+        font1 = QFont()
+        font1.setBold(True)
+        self.labelTextoDisjuntor.setFont(font1)
+        self.labelTextoDisjuntor.setAlignment(Qt.AlignCenter)
+
+        self.verticalLayoutDisjuntor.addWidget(self.labelTextoDisjuntor)
+
+
+        self.horizontalLayoutIndicadores.addWidget(self.groupBoxDisjuntor)
+
 
         self.verticalLayoutPrincipal.addLayout(self.horizontalLayoutIndicadores)
+
+        self.groupBoxComandos = QGroupBox(DashboardWindow)
+        self.groupBoxComandos.setObjectName(u"groupBoxComandos")
+        self.horizontalLayoutComandos = QHBoxLayout(self.groupBoxComandos)
+        self.horizontalLayoutComandos.setObjectName(u"horizontalLayoutComandos")
+        self.botaoCorteEmergencial = QPushButton(self.groupBoxComandos)
+        self.botaoCorteEmergencial.setObjectName(u"botaoCorteEmergencial")
+        self.botaoCorteEmergencial.setMinimumSize(QSize(0, 50))
+        self.botaoCorteEmergencial.setFont(font1)
+        self.botaoCorteEmergencial.setStyleSheet(u"QPushButton { background-color: #D32F2F; color: white; border-radius: 6px; } QPushButton:hover { background-color: #B71C1C; }")
+
+        self.horizontalLayoutComandos.addWidget(self.botaoCorteEmergencial)
+
+        self.horizontalSpacerComandos = QSpacerItem(40, 20, QSizePolicy.Policy.Expanding, QSizePolicy.Policy.Minimum)
+
+        self.horizontalLayoutComandos.addItem(self.horizontalSpacerComandos)
+
+        self.verticalLayoutLimite = QVBoxLayout()
+        self.verticalLayoutLimite.setObjectName(u"verticalLayoutLimite")
+        self.labelLimiteAlerta = QLabel(self.groupBoxComandos)
+        self.labelLimiteAlerta.setObjectName(u"labelLimiteAlerta")
+        self.labelLimiteAlerta.setAlignment(Qt.AlignCenter)
+
+        self.verticalLayoutLimite.addWidget(self.labelLimiteAlerta)
+
+        self.sliderLimiteAlerta = QSlider(self.groupBoxComandos)
+        self.sliderLimiteAlerta.setObjectName(u"sliderLimiteAlerta")
+        self.sliderLimiteAlerta.setMinimumSize(QSize(260, 0))
+        self.sliderLimiteAlerta.setMinimum(500)
+        self.sliderLimiteAlerta.setMaximum(3000)
+        self.sliderLimiteAlerta.setSingleStep(50)
+        self.sliderLimiteAlerta.setPageStep(100)
+        self.sliderLimiteAlerta.setValue(1500)
+        self.sliderLimiteAlerta.setOrientation(Qt.Horizontal)
+        self.sliderLimiteAlerta.setTickPosition(QSlider.TickPosition.TicksBelow)
+        self.sliderLimiteAlerta.setTickInterval(250)
+
+        self.verticalLayoutLimite.addWidget(self.sliderLimiteAlerta)
+
+
+        self.horizontalLayoutComandos.addLayout(self.verticalLayoutLimite)
+
+
+        self.verticalLayoutPrincipal.addWidget(self.groupBoxComandos)
+
+        self.labelAlerta = QLabel(DashboardWindow)
+        self.labelAlerta.setObjectName(u"labelAlerta")
+        self.labelAlerta.setFont(font1)
+        self.labelAlerta.setStyleSheet(u"QLabel { color: #D32F2F; }")
+        self.labelAlerta.setAlignment(Qt.AlignCenter)
+        self.labelAlerta.setVisible(False)
+
+        self.verticalLayoutPrincipal.addWidget(self.labelAlerta)
 
         self.groupBoxGrafico = QGroupBox(DashboardWindow)
         self.groupBoxGrafico.setObjectName(u"groupBoxGrafico")
@@ -116,7 +206,7 @@ class Ui_DashboardWindow(object):
         self.verticalLayoutGrafico.setObjectName(u"verticalLayoutGrafico")
         self.widgetGrafico = QWidget(self.groupBoxGrafico)
         self.widgetGrafico.setObjectName(u"widgetGrafico")
-        self.widgetGrafico.setMinimumSize(QSize(0, 320))
+        self.widgetGrafico.setMinimumSize(QSize(0, 300))
         self.verticalLayoutGraficoContainer = QVBoxLayout(self.widgetGrafico)
         self.verticalLayoutGraficoContainer.setObjectName(u"verticalLayoutGraficoContainer")
         self.verticalLayoutGraficoContainer.setContentsMargins(0, 0, 0, 0)
@@ -160,7 +250,14 @@ class Ui_DashboardWindow(object):
         self.labelUnidadeCorrente.setText(QCoreApplication.translate("DashboardWindow", u"Amperes (A)", None))
         self.groupBoxPotencia.setTitle(QCoreApplication.translate("DashboardWindow", u"Pot\u00eancia Ativa (P = V x I)", None))
         self.labelUnidadePotencia.setText(QCoreApplication.translate("DashboardWindow", u"Watts (W)", None))
-        self.groupBoxGrafico.setTitle(QCoreApplication.translate("DashboardWindow", u"Tend\u00eancia Temporal - Consumo de Pot\u00eancia", None))
+        self.groupBoxDisjuntor.setTitle(QCoreApplication.translate("DashboardWindow", u"Disjuntor / Chave de Prote\u00e7\u00e3o", None))
+        self.labelLedDisjuntor.setText("")
+        self.labelTextoDisjuntor.setText(QCoreApplication.translate("DashboardWindow", u"FECHADO", None))
+        self.groupBoxComandos.setTitle(QCoreApplication.translate("DashboardWindow", u"Comandos de Acionamento", None))
+        self.botaoCorteEmergencial.setText(QCoreApplication.translate("DashboardWindow", u"CORTE EMERGENCIAL DE CARGA", None))
+        self.labelLimiteAlerta.setText(QCoreApplication.translate("DashboardWindow", u"Limite de Alerta de Consumo: 1500 W", None))
+        self.labelAlerta.setText(QCoreApplication.translate("DashboardWindow", u"\u26a0 CONSUMO ACIMA DO LIMITE DE ALERTA!", None))
+        self.groupBoxGrafico.setTitle(QCoreApplication.translate("DashboardWindow", u"Tend\u00eancia de Consumo (Curva de Demanda - \u00faltimas 24 horas)", None))
         self.labelStatus.setText(QCoreApplication.translate("DashboardWindow", u"Status: aguardando dados...", None))
         self.botaoVoltar.setText(QCoreApplication.translate("DashboardWindow", u"Voltar", None))
     # retranslateUi

@@ -2,7 +2,6 @@ from PySide6.QtWidgets import QDialog, QMessageBox
 from PySide6.QtCore import Signal
 from ui.serial_config_dialog import Ui_DialogSerial
 
-
 class SerialConfigController(QDialog):
     """
     Controller da tela de Configuração da Comunicação Serial.
