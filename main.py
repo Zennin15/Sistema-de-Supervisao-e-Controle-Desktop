@@ -1,8 +1,12 @@
 import sys
 from PySide6.QtWidgets import QApplication
-from controller.main_window_controller import MainWindowController
+from controllers.main_window_controller import MainWindowController
+from database.connection import Database
 
 def main():         
+    # Inicializa o banco de dados.
+    Database.init_db();
+
     # Inicia o motor do Qt
     app = QApplication(sys.argv)
     
