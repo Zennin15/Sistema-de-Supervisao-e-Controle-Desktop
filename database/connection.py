@@ -22,27 +22,32 @@ class Database:
             cursor.execute("""
                 CREATE TABLE IF NOT EXISTS atuadores (
                     id INTEGER PRIMARY KEY AUTOINCREMENT,
-                    nome TEXT NOT NULL,
-                    status TEXT NOT NULL CHECK(status IN ('LIGADO', 'DESLIGADO'))
+                    tag TEXT NOT NULL UNIQUE,
+                    tipo TEXT NOT NULL,
+                    status TEXT NOT NULL CHECK(status IN ('LIGADO', 'DESLIGADO')),
+                    ultima_atualizacao DATETIME NOT NULL
                 )
             """)
             # Tabela de Histórico/Auditoria
             cursor.execute("""
                 CREATE TABLE IF NOT EXISTS historico_eventos (
                     id INTEGER PRIMARY KEY AUTOINCREMENT,
-                    atuador_id INTEGER NOT NULL,
-                    status_registrado TEXT NOT NULL,
-                    horario DATETIME DEFAULT CURRENT_TIMESTAMP,
+                    data_hora DATETIME DEFAULT CURRENT_TIMESTAMP,
+                    tipo_evento TEXT NOT NULL,
+                    valor_medido REAL,
+                    descricao TEXT,
                     FOREIGN KEY(atuador_id) REFERENCES atuadores(id)
                 )
             """)
-
+            # Tabela de limites
             cursor.execute("""
                 CREATE TABLE IF NOT EXISTS limites (
                     id INTEGER PRIMARY KEY AUTOINCREMENT,
                     atuador_id INTEGER NOT NULL,
-                    status_registrado TEXT NOT NULL,
-                    horario DATETIME DEFAULT CURRENT_TIMESTAMP,
+                    limite_max_corrente REAL,   
+                    tensao_desarme REAL
+                    descricao TEXT,
+                    ultima_atualizacao DATETIME DEFAULT CURRENT_TIMESTAMP
                     FOREIGN KEY(atuador_id) REFERENCES atuadores(id)
                 )
             """)
