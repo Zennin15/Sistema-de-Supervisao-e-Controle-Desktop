@@ -2,13 +2,17 @@ import sys
 from PySide6.QtWidgets import QApplication
 from controllers.main_window_controller import MainWindowController
 from database.connection import Database
-from config_manager import carregar_ou_criar_config  # Importa a sua função
+from config_manager import carregar_ou_criar_config  
+from logger import registrar_log_inicializacao        
 
 def main():         
     # Inicializa o banco de dados.
     Database.init_db()
+    
+    # Registra o log exigido no subsistema de auditoria
+    registrar_log_inicializacao()
 
-    # --- TAREFA DA PESSOA A: Valida e carrega o config.json ---
+    # Valida e carrega o arquivo de configuração JSON
     config = carregar_ou_criar_config()
 
     # Inicia o motor do Qt
