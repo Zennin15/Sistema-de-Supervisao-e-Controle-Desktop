@@ -18,6 +18,7 @@ class Database:
         """Garante a estrutura inicial no banco de dados."""
         with cls.get_connection() as conn:
             cursor = conn.cursor()
+            
             # Tabela do Atuador
             cursor.execute("""
                 CREATE TABLE IF NOT EXISTS atuadores (
@@ -28,10 +29,12 @@ class Database:
                     ultima_atualizacao DATETIME NOT NULL
                 )
             """)
+            
             # Tabela de Histórico/Auditoria
             cursor.execute("""
                 CREATE TABLE IF NOT EXISTS historico_eventos (
                     id INTEGER PRIMARY KEY AUTOINCREMENT,
+                    atuador_id INTEGER,
                     data_hora DATETIME DEFAULT CURRENT_TIMESTAMP,
                     tipo_evento TEXT NOT NULL,
                     valor_medido REAL,
@@ -39,16 +42,18 @@ class Database:
                     FOREIGN KEY(atuador_id) REFERENCES atuadores(id)
                 )
             """)
+            
             # Tabela de limites
             cursor.execute("""
                 CREATE TABLE IF NOT EXISTS limites (
                     id INTEGER PRIMARY KEY AUTOINCREMENT,
                     atuador_id INTEGER NOT NULL,
                     limite_max_corrente REAL,   
-                    tensao_desarme REAL
+                    tensao_desarme REAL,
                     descricao TEXT,
-                    ultima_atualizacao DATETIME DEFAULT CURRENT_TIMESTAMP
+                    ultima_atualizacao DATETIME DEFAULT CURRENT_TIMESTAMP,
                     FOREIGN KEY(atuador_id) REFERENCES atuadores(id)
                 )
             """)
+            
             conn.commit()
