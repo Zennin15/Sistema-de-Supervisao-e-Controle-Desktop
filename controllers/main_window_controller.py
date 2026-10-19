@@ -1,9 +1,9 @@
 from PySide6.QtWidgets import QMainWindow, QDialog, QTableWidget, QTableWidgetItem, QMessageBox, QHeaderView, QPushButton
 from PySide6.QtCore import QDateTime
 from ui.main_window import Ui_MainWindow
-from controller.limits_configuration_window_controller import LimitsConfigurationWindowController
-from controller.dashboard_window_controller import DashboardWindowController
-from controller.serial_controller import SerialConfigController
+from controllers.limits_configuration_window_controller import LimitsConfigurationWindowController
+from controllers.dashboard_window_controller import DashboardWindowController
+from controllers.serial_controller import SerialConfigController
 
 class MainWindowController(QMainWindow):
     def __init__(self):

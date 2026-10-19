@@ -5,7 +5,6 @@ from ui.limits_configuration_window import Ui_Dialog
 class LimitsConfigurationWindowController(QDialog):
     # Sinal personalizado para enviar a lista de limites salvos para a tela principal
     regras_salvas = Signal(list)
-
     def __init__(self, parent=None):
         super().__init__(parent)
         
@@ -40,11 +39,9 @@ class LimitsConfigurationWindowController(QDialog):
             tensao = item_tensao.text().strip() if item_tensao else ""
             corrente = item_corrente.text().strip() if item_corrente else ""
 
-            # Se a linha inteira estiver vazia, pode ignorar
             if tensao == "" and corrente == "":
                 continue
-
-            # Valida cada célula individualmente
+            
             if not self.validar_celula(tensao, "Tensão", row):
                 return
             

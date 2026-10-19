@@ -5,7 +5,7 @@ from matplotlib.backends.backend_qtagg import FigureCanvasQTAgg
 from matplotlib.figure import Figure
 
 from ui.dashboard_window import Ui_DashboardWindow
-from model.telemetry_model import TelemetryModel
+from models.telemetry_model import TelemetryModel
 
 
 class DashboardWindowController(QDialog):
