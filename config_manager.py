@@ -35,3 +35,15 @@ def carregar_ou_criar_config():
     except Exception as e:
         print(f"Erro ao ler o arquivo {CONFIG_FILE}: {e}. Utilizando valores padrão.")
         return DEFAULT_CONFIG
+
+def salvar_config(novos_dados):
+    """
+    Atualiza e salva os novos valores (porta_com, baud_rate, etc.) 
+    diretamente no arquivo config.json.
+    """
+    try:
+        with open(CONFIG_FILE, "w", encoding="utf-8") as f:
+            json.dump(novos_dados, f, indent=4)
+        print(f"Arquivo '{CONFIG_FILE}' atualizado e salvo com sucesso.")
+    except Exception as e:
+        print(f"Erro ao salvar o arquivo {CONFIG_FILE}: {e}")
