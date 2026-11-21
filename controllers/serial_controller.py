@@ -1,7 +1,7 @@
 from PySide6.QtWidgets import QDialog, QMessageBox
 from PySide6.QtCore import Signal
 from ui.serial_config_dialog import Ui_DialogSerial
-from config_manager import carregar_ou_criar_config, salvar_config
+from controllers.config_manager import carregar_ou_criar_config, salvar_config
 
 class SerialConfigController(QDialog):
     """

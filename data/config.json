@@ -1,6 +1,6 @@
 {
-    "porta_com": "COM4",
-    "baud_rate": 115200,
+    "porta_com": "COM3",
+    "baud_rate": 9600,
     "limites_alerta": {
         "corrente_maxima": 25.0
     }
