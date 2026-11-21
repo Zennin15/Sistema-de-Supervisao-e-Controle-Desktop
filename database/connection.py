@@ -92,6 +92,18 @@ class Database:
             )
         """
 
+    @staticmethod
+    def _sql_telemetria(nome_tabela="leituras_telemetria") -> str:
+        return f"""
+            CREATE TABLE IF NOT EXISTS {nome_tabela} (
+                id INTEGER PRIMARY KEY AUTOINCREMENT,
+                data_hora TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP,
+                tensao REAL NOT NULL,
+                corrente REAL NOT NULL,
+                potencia REAL NOT NULL
+            )
+        """
+
     @classmethod
     def _migrar_esquema_antigo(cls) -> None:
         """Recria tabelas antigas para aplicar as restrições sem perder dados."""
@@ -237,6 +249,31 @@ class Database:
                 conn.execute(cls._sql_atuadores())
                 conn.execute(cls._sql_historico())
                 conn.execute(cls._sql_limites())
+                conn.execute(cls._sql_telemetria())
+
+                # Popula dados iniciais de telemetria caso a tabela esteja vazia (curva de 24h)
+                count_leituras = conn.execute("SELECT COUNT(*) FROM leituras_telemetria").fetchone()[0]
+                if count_leituras == 0:
+                    import random
+                    from datetime import datetime, timedelta
+                    agora = datetime.now()
+                    padrao_demanda = [
+                        0.30, 0.25, 0.22, 0.20, 0.22, 0.30, 0.45, 0.65,
+                        0.75, 0.70, 0.68, 0.72, 0.78, 0.75, 0.70, 0.68,
+                        0.72, 0.85, 0.95, 0.90, 0.75, 0.60, 0.45, 0.35,
+                    ]
+                    for i, fator in enumerate(padrao_demanda):
+                        data_amostra = (agora - timedelta(hours=24 - i)).strftime("%Y-%m-%d %H:%M:%S")
+                        tensao = round(random.uniform(215.0, 225.0), 2)
+                        corrente = round(5.0 * fator + random.uniform(-0.1, 0.1), 2)
+                        potencia = round(tensao * max(0.0, corrente), 2)
+                        conn.execute(
+                            """
+                            INSERT INTO leituras_telemetria (data_hora, tensao, corrente, potencia)
+                            VALUES (?, ?, ?, ?)
+                            """,
+                            (data_amostra, tensao, corrente, potencia)
+                        )
 
                 conn.execute(
                     """

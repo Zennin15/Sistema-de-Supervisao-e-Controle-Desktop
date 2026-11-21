@@ -8,4 +8,5 @@ venv/
 *.db-shm
 *.db-journal
 data/*.db
+*.db
 *.log

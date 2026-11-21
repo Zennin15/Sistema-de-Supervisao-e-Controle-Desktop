@@ -303,3 +303,75 @@ class LimitRepository:
                 return cursor.rowcount > 0
         finally:
             conn.close()
+
+
+class TelemetryRepository:
+    """Repositório de telemetria contínua (tensão, corrente, potência e timestamp)."""
+
+    @staticmethod
+    def salvar_leitura(tensao: float, corrente: float, potencia: float, data_hora: str = None) -> int:
+        """Persiste uma nova amostra no SQLite."""
+        conn = Database.get_connection()
+        try:
+            with conn:
+                if data_hora:
+                    cursor = conn.execute(
+                        """
+                        INSERT INTO leituras_telemetria (data_hora, tensao, corrente, potencia)
+                        VALUES (?, ?, ?, ?)
+                        """,
+                        (data_hora, float(tensao), float(corrente), float(potencia)),
+                    )
+                else:
+                    cursor = conn.execute(
+                        """
+                        INSERT INTO leituras_telemetria (data_hora, tensao, corrente, potencia)
+                        VALUES (datetime('now', 'localtime'), ?, ?, ?)
+                        """,
+                        (float(tensao), float(corrente), float(potencia)),
+                    )
+                return cursor.lastrowid
+        finally:
+            conn.close()
+
+    @staticmethod
+    def consultar_ultimos(limite: int = 50) -> list:
+        """
+        Retorna as últimas N leituras gravadas em ordem cronológica (mais antiga -> mais recente)
+        para correta plotagem temporal na curva.
+        """
+        conn = Database.get_connection()
+        try:
+            rows = conn.execute(
+                """
+                SELECT id, data_hora, tensao, corrente, potencia
+                FROM leituras_telemetria
+                ORDER BY id DESC
+                LIMIT ?
+                """,
+                (int(limite),),
+            ).fetchall()
+            resultados = [dict(row) for row in rows]
+            resultados.reverse()
+            return resultados
+        finally:
+            conn.close()
+
+    @staticmethod
+    def consultar_por_intervalo(data_inicio: str, data_fim: str) -> list:
+        """Retorna leituras dentro de um intervalo de datas/horários em ordem cronológica."""
+        conn = Database.get_connection()
+        try:
+            rows = conn.execute(
+                """
+                SELECT id, data_hora, tensao, corrente, potencia
+                FROM leituras_telemetria
+                WHERE data_hora BETWEEN ? AND ?
+                ORDER BY data_hora ASC
+                """,
+                (str(data_inicio), str(data_fim)),
+            ).fetchall()
+            return [dict(row) for row in rows]
+        finally:
+            conn.close()
+
