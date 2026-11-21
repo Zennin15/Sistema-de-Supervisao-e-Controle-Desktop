@@ -2,8 +2,8 @@ import sys
 from PySide6.QtWidgets import QApplication
 from controllers.main_window_controller import MainWindowController
 from database.connection import Database
-from config_manager import carregar_ou_criar_config  
-from logger import registrar_log_inicializacao        
+from controllers.config_manager import carregar_ou_criar_config  
+from logs.Logger import registrar_log_inicializacao        
 
 def main():         
     # Inicializa o banco de dados.
