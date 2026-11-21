@@ -1,0 +1,7 @@
+{
+    "porta_com": "COM4",
+    "baud_rate": 115200,
+    "limites_alerta": {
+        "corrente_maxima": 25.0
+    }
+}
