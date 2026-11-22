@@ -1,8 +1,7 @@
 import logging
-import sqlite3
 from datetime import datetime
 
-from PySide6.QtCore import QObject, QRunnable, QThreadPool, Signal
+from PySide6.QtCore import Qt
 from PySide6.QtWidgets import (
     QDialog,
     QHeaderView,
@@ -13,45 +12,20 @@ from PySide6.QtWidgets import (
 )
 
 from controllers.dashboard_window_controller import DashboardWindowController
+from controllers.database_worker import DatabaseWorker
 from controllers.limits_configuration_window_controller import LimitsConfigurationWindowController
 from controllers.serial_controller import SerialConfigController
-from logs.logger import registrar_erro_emergencia
-from models.repository import (
-    ActuatorRepository,
-    LimitRepository,
-    Repository,
-    TAG_DISJUNTOR_PRINCIPAL,
-)
+from controllers.serial_worker import SerialWorker
+from logs.logger import registrar_alerta_corrente
+from models.repository import TAG_DISJUNTOR_PRINCIPAL
 from ui.main_window import Ui_MainWindow
-
-
-class _DbTaskSignals(QObject):
-    """Sinais para entregar resultados de threads do banco para a Main Thread."""
-
-    historico_carregado = Signal(list)
-    limites_carregados = Signal(list)
-    evento_registrado = Signal(bool, str, object)
-    limites_salvos = Signal(bool, list, str)
-    erro_db = Signal(str, str)
-
-
-class _DbTask(QRunnable):
-    """Executa operações do banco fora da GUI thread."""
-
-    def __init__(self, fn, *args, **kwargs):
-        super().__init__()
-        self.fn = fn
-        self.args = args
-        self.kwargs = kwargs
-
-    def run(self):
-        self.fn(*self.args, **self.kwargs)
 
 
 class MainWindowController(QMainWindow):
     """
     Main Thread (GUI): gerencia janelas, cliques, navegação e renderização da UI.
-    Operações de banco são passadas para o QThreadPool para não bloquear a interface.
+    - SerialWorker (QThread): leitura contínua da porta serial e decodificação de pacotes.
+    - DatabaseWorker (QThread): persistência e consultas SQLite isoladas em segundo plano.
     """
 
     def __init__(self):
@@ -60,18 +34,19 @@ class MainWindowController(QMainWindow):
         self.ui = Ui_MainWindow()
         self.ui.setupUi(self)
 
-        self._thread_pool = QThreadPool.globalInstance()
-        self._db_signals = _DbTaskSignals()
-        self._db_signals.historico_carregado.connect(self._renderizar_historico)
-        self._db_signals.limites_carregados.connect(self._on_limites_carregados)
-        self._db_signals.evento_registrado.connect(self._on_evento_registrado)
-        self._db_signals.limites_salvos.connect(self._on_limites_salvos)
-        self._db_signals.erro_db.connect(self._on_erro_db)
-
         self.limites_registrados = []
-        self._consultar_limites_async()
+        self.serial_worker: SerialWorker | None = None
 
-        # Botão de fechar histórico posicionado acima da tabela.
+        # 1. Database Worker Thread dedicada
+        self.db_worker = DatabaseWorker(parent=self)
+        self.db_worker.historico_carregado.connect(self._renderizar_historico)
+        self.db_worker.limites_carregados.connect(self._on_limites_carregados)
+        self.db_worker.limites_gravados.connect(self._on_limites_gravados)
+        self.db_worker.evento_gravado.connect(self._on_evento_gravado)
+        self.db_worker.erro_persistencia.connect(self._on_erro_db)
+        self.db_worker.start()
+
+        # Botão de fechar histórico posicionado acima da tabela
         if hasattr(self.ui, "tableEventos"):
             self.btn_fechar_historico = QPushButton("Fechar Histórico", self.ui.centralwidget)
             self.btn_fechar_historico.setGeometry(
@@ -86,7 +61,7 @@ class MainWindowController(QMainWindow):
 
         self.configurar_tabela_eventos()
 
-        # Conexões dos botões da janela principal.
+        # Conexões dos botões da janela principal
         if hasattr(self.ui, "pushButton_4"):
             self.ui.pushButton_4.clicked.connect(self.abrir_janela)
         if hasattr(self.ui, "pushButton"):
@@ -96,10 +71,24 @@ class MainWindowController(QMainWindow):
         if hasattr(self.ui, "pushButton_2"):
             self.ui.pushButton_2.clicked.connect(self.abrir_configuracao_serial)
 
+        # Carga inicial em segundo plano
+        self.db_worker.solicitar_limites()
+        self.db_worker.solicitar_historico()
+
     def showEvent(self, event):
-        """Solicita atualização assíncrona da tabela quando a janela é exibida."""
         super().showEvent(event)
         self.carregar_historico()
+
+    def closeEvent(self, event):
+        """Encerra SerialWorker e DatabaseWorker de forma ordenada."""
+        if self.serial_worker is not None and self.serial_worker.isRunning():
+            self.serial_worker.parar()
+            self.serial_worker = None
+
+        if hasattr(self, "db_worker") and self.db_worker.isRunning():
+            self.db_worker.parar()
+
+        super().closeEvent(event)
 
     def configurar_tabela_eventos(self):
         if not hasattr(self.ui, "tableEventos"):
@@ -125,36 +114,10 @@ class MainWindowController(QMainWindow):
         except (TypeError, ValueError):
             return str(valor)
 
-    def _consultar_limites_async(self):
-        def tarefa():
-            try:
-                limites = LimitRepository.listar_todos()
-                self._db_signals.limites_carregados.emit(limites)
-            except sqlite3.Error as exc:
-                logging.exception("Falha ao carregar os limites persistidos.")
-                self._db_signals.erro_db.emit(
-                    "Erro ao carregar limites",
-                    f"Não foi possível consultar os limites no SQLite.\n{exc}",
-                )
-
-        self._thread_pool.start(_DbTask(tarefa))
-
-    def _on_limites_carregados(self, limites: list):
-        self.limites_registrados = limites
-
     def carregar_historico(self):
-        """Dispara a consulta do histórico em worker thread sem bloquear a GUI."""
         if not hasattr(self.ui, "tableEventos"):
             return
-
-        def tarefa():
-            try:
-                eventos = Repository.listar_todos()
-                self._db_signals.historico_carregado.emit(eventos)
-            except sqlite3.Error:
-                logging.exception("Falha ao consultar o histórico de eventos no SQLite.")
-
-        self._thread_pool.start(_DbTask(tarefa))
+        self.db_worker.solicitar_historico()
 
     def _renderizar_historico(self, eventos: list):
         """Atualiza a QTableWidget exclusivamente na Main Thread."""
@@ -177,45 +140,43 @@ class MainWindowController(QMainWindow):
                     evento["descricao"],
                 )
                 for coluna, conteudo in enumerate(itens):
-                    tabela.setItem(row, coluna, QTableWidgetItem(str(conteudo)))
+                    item = QTableWidgetItem(str(conteudo))
+                    item.setFlags(item.flags() & ~Qt.ItemIsEditable)
+                    tabela.setItem(row, coluna, item)
         finally:
             tabela.setUpdatesEnabled(True)
 
     def registrar_evento(self, tipo: str, descricao: str, valor_medido=None):
-        """Persiste um evento em background e atualiza a tabela ao concluir."""
+        self.db_worker.gravar_evento(
+            tipo_evento=tipo,
+            descricao=descricao,
+            valor_medido=valor_medido,
+            tag_atuador=TAG_DISJUNTOR_PRINCIPAL,
+        )
 
-        def tarefa():
-            try:
-                atuador_id = ActuatorRepository.obter_id_por_tag(TAG_DISJUNTOR_PRINCIPAL)
-                Repository.registrar_evento(
-                    tipo_evento=tipo,
-                    descricao=descricao,
-                    valor_medido=valor_medido,
-                    atuador_id=atuador_id,
-                )
-                eventos = Repository.listar_todos()
-                self._db_signals.evento_registrado.emit(True, tipo, descricao)
-                self._db_signals.historico_carregado.emit(eventos)
-            except (sqlite3.Error, ValueError) as exc:
-                logging.exception("Falha ao registrar evento no SQLite.")
-                if "emerg" in tipo.lower() or "corte" in tipo.lower():
-                    registrar_erro_emergencia(str(exc))
-                self._db_signals.erro_db.emit(
-                    "Erro de persistência",
-                    f"Não foi possível registrar o evento no histórico.\n{exc}",
-                )
+    def _on_evento_gravado(self, tipo: str, descricao: str, valor_medido):
+        logging.info("Evento registrado: %s - %s", tipo, descricao)
 
-        self._thread_pool.start(_DbTask(tarefa))
+    def _on_limites_carregados(self, limites: list):
+        self.limites_registrados = limites
 
-    def _on_evento_registrado(self, sucesso: bool, tipo: str, descricao: str):
-        if sucesso:
-            logging.info("Evento registrado: %s - %s", tipo, descricao)
+    def _on_limites_gravados(self, novos_limites: list):
+        self.limites_registrados = novos_limites
+        for idx, limite in enumerate(novos_limites, start=1):
+            tensao = limite.get("Tensao", "-")
+            corrente = limite.get("Corrente", "-")
+            self.registrar_evento(
+                "Configuração",
+                f"Regra #{idx}: Tensão máxima={tensao} V, corrente máxima={corrente} A",
+            )
+        QMessageBox.information(
+            self, "Sucesso", "Limites salvos no SQLite e registrados no histórico!"
+        )
 
     def _on_erro_db(self, titulo: str, mensagem: str):
         QMessageBox.critical(self, titulo, mensagem)
 
     def exibir_historico(self):
-        """Atualiza e exibe a tabela e o botão de fechar."""
         self.carregar_historico()
         if hasattr(self.ui, "tableEventos"):
             self.ui.tableEventos.setVisible(True)
@@ -223,7 +184,6 @@ class MainWindowController(QMainWindow):
                 self.btn_fechar_historico.setVisible(True)
 
     def fechar_historico(self):
-        """Oculta a tabela e o botão de fechar."""
         if hasattr(self.ui, "tableEventos"):
             self.ui.tableEventos.setVisible(False)
             if hasattr(self, "btn_fechar_historico"):
@@ -237,56 +197,72 @@ class MainWindowController(QMainWindow):
             return
 
         novos_limites = popup.get_dados()
-
-        def tarefa():
-            try:
-                LimitRepository.substituir_todos(novos_limites)
-                for idx, limite in enumerate(novos_limites, start=1):
-                    tensao = limite.get("Tensao", "-")
-                    corrente = limite.get("Corrente", "-")
-                    atuador_id = ActuatorRepository.obter_id_por_tag(TAG_DISJUNTOR_PRINCIPAL)
-                    Repository.registrar_evento(
-                        tipo_evento="Configuração",
-                        descricao=(
-                            f"Regra #{idx}: Tensão máxima={tensao} V, "
-                            f"corrente máxima={corrente} A"
-                        ),
-                        valor_medido=None,
-                        atuador_id=atuador_id,
-                    )
-                eventos = Repository.listar_todos()
-                self._db_signals.limites_salvos.emit(True, novos_limites, "")
-                self._db_signals.historico_carregado.emit(eventos)
-            except (sqlite3.Error, ValueError, KeyError) as exc:
-                logging.exception("Falha ao persistir os limites de segurança.")
-                self._db_signals.limites_salvos.emit(
-                    False,
-                    novos_limites,
-                    f"Não foi possível salvar os limites.\n{exc}",
-                )
-
-        self._thread_pool.start(_DbTask(tarefa))
-
-    def _on_limites_salvos(self, sucesso: bool, novos_limites: list, erro_msg: str):
-        if sucesso:
-            self.limites_registrados = novos_limites
-            QMessageBox.information(
-                self, "Sucesso", "Limites salvos no SQLite e registrados no histórico!"
-            )
-        else:
-            QMessageBox.critical(self, "Erro ao salvar limites", erro_msg)
+        self.db_worker.substituir_limites(novos_limites)
 
     def abrir_dashboard(self):
         dashboard = DashboardWindowController(parent=self)
-        dashboard.historico_atualizado.connect(self.carregar_historico)
+        if hasattr(dashboard, "historico_atualizado"):
+            dashboard.historico_atualizado.connect(self.carregar_historico)
+
+        # Se o worker serial estiver ativo, repassa leituras decodificadas para o dashboard
+        if self.serial_worker is not None and hasattr(dashboard, "atualizar_leitura"):
+            self.serial_worker.dados_recebidos.connect(dashboard.atualizar_leitura)
+
         dashboard.exec()
+
+        if self.serial_worker is not None and hasattr(dashboard, "atualizar_leitura"):
+            try:
+                self.serial_worker.dados_recebidos.disconnect(dashboard.atualizar_leitura)
+            except (RuntimeError, TypeError):
+                pass
+
         self.carregar_historico()
 
     def abrir_configuracao_serial(self):
-        dialog = SerialConfigController(parent=self)
-        if hasattr(dialog, "status_alterado"):
-            dialog.status_alterado.connect(self._registrar_status_serial)
+        dialog = SerialConfigController(
+            parent=self,
+            worker_ativo=self.serial_worker,
+        )
+        dialog.worker_iniciado.connect(self._vincular_worker_serial)
+        dialog.worker_encerrado.connect(self._desvincular_worker_serial)
+        dialog.status_alterado.connect(self._registrar_status_serial)
         dialog.exec()
+
+    def _vincular_worker_serial(self, worker: SerialWorker):
+        """Mantém o worker ativo no controller principal e liga aos subsistemas."""
+        if self.serial_worker is not None and self.serial_worker is not worker:
+            self.serial_worker.parar()
+
+        self.serial_worker = worker
+        self.serial_worker.leitura_para_gravar.connect(self.db_worker.gravar_leitura_telemetria)
+        self.serial_worker.dados_recebidos.connect(self._verificar_limites_leitura)
+        self.serial_worker.erro_serial.connect(self._on_erro_serial)
+        self.serial_worker.finished.connect(self._on_worker_serial_finalizado)
+
+    def _desvincular_worker_serial(self):
+        self.serial_worker = None
+
+    def _on_worker_serial_finalizado(self):
+        self.serial_worker = None
+
+    def _verificar_limites_leitura(self, pacote: dict):
+        """Avalia corrente recebida contra os limites configurados e registra alerta se exceder."""
+        corrente = pacote.get("corrente")
+        if corrente is None or not self.limites_registrados:
+            return
+
+        for regra in self.limites_registrados:
+            try:
+                limite_corrente = float(regra.get("Corrente", 0))
+            except (TypeError, ValueError):
+                continue
+
+            if limite_corrente > 0 and float(corrente) > limite_corrente:
+                registrar_alerta_corrente(float(corrente), limite_corrente)
+                break
+
+    def _on_erro_serial(self, mensagem: str):
+        QMessageBox.warning(self, "Erro de Comunicação Serial", mensagem)
 
     def _registrar_status_serial(self, conectado: bool, dados: dict):
         status = "Conexão serial estabelecida" if conectado else "Conexão serial encerrada"
