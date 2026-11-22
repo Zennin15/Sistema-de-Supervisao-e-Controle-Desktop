@@ -17,6 +17,7 @@ from controllers.limits_configuration_window_controller import LimitsConfigurati
 from controllers.serial_controller import SerialConfigController
 from controllers.serial_worker import SerialWorker
 from logs.logger import registrar_alerta_corrente
+from models.config_manager import carregar_ou_criar_config, salvar_config
 from models.repository import TAG_DISJUNTOR_PRINCIPAL
 from ui.main_window import Ui_MainWindow
 
@@ -169,6 +170,20 @@ class MainWindowController(QMainWindow):
                 "Configuração",
                 f"Regra #{idx}: Tensão máxima={tensao} V, corrente máxima={corrente} A",
             )
+
+        if novos_limites:
+            try:
+                config_atual = carregar_ou_criar_config()
+                limites_alerta = config_atual.setdefault("limites_alerta", {})
+                primeira_regra = novos_limites[0]
+                if primeira_regra.get("Tensao") is not None:
+                    limites_alerta["tensao_maxima"] = float(primeira_regra["Tensao"])
+                if primeira_regra.get("Corrente") is not None:
+                    limites_alerta["corrente_maxima"] = float(primeira_regra["Corrente"])
+                salvar_config(config_atual)
+            except (TypeError, ValueError, OSError) as exc:
+                logging.warning("Não foi possível sincronizar limites no config.json: %s", exc)
+
         QMessageBox.information(
             self, "Sucesso", "Limites salvos no SQLite e registrados no histórico!"
         )
