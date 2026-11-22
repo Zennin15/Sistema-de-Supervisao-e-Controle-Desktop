@@ -1,0 +1,10 @@
+{
+    "porta_com": "COM2",
+    "baud_rate": 9600,
+    "taxa_amostragem_ms": 1000,
+    "limites_alerta": {
+        "tensao_minima": 180.0,
+        "tensao_maxima": 4.0,
+        "corrente_maxima": 5.0
+    }
+}
