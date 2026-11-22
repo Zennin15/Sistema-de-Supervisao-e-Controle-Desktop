@@ -249,4 +249,36 @@ class DashboardWindowController(QDialog):
 
         cor = "#D32F2F" if acima_do_limite else "#00E676"
         self.ui.lcdPotencia.setStyleSheet(
-            f"QLCDNumber {{
+            f"QLCDNumber {{ background-color: #101820; color: {cor}; border: 2px solid {cor}; border-radius: 6px; }}"
+        )
+
+        if acima_do_limite and not self._alerta_ativo:
+            self._registrar_evento_alarme()
+        self._alerta_ativo = acima_do_limite
+
+    def _registrar_evento_alarme(self):
+        potencia = self.model.potencia_atual
+        limite = self.model.limite_alerta_watts
+        descricao = (
+            f"Potência acima do limite: {potencia:.2f} W "
+            f"(limite configurado: {limite:.2f} W)."
+        )
+        try:
+            atuador_id = ActuatorRepository.obter_id_por_tag(TAG_DISJUNTOR_PRINCIPAL)
+            Repository.registrar_evento(
+                "Alarme de consumo", descricao, potencia, atuador_id
+            )
+            logging.warning(descricao)
+            self.historico_atualizado.emit()
+        except (sqlite3.Error, ValueError) as exc:
+            logging.exception("Falha ao persistir o evento de alarme: %s", exc)
+
+    def _redesenhar_grafico(self, eixo_x, eixo_y):
+        self.linha_potencia.set_data(eixo_x, eixo_y)
+        self.eixo.relim()
+        self.eixo.autoscale_view()
+        self.canvas.draw_idle()
+
+    def closeEvent(self, event):
+        self.timer_telemetria.stop()
+        super().closeEvent(event)
