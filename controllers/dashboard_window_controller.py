@@ -9,7 +9,7 @@ from matplotlib.backends.backend_qtagg import FigureCanvasQTAgg
 from matplotlib.figure import Figure
 
 from database.connection import Database
-from logs.Logger import registrar_erro_emergencia
+from logs.logger import registrar_erro_emergencia
 from models.repository import (
     ActuatorRepository,
     Repository,
