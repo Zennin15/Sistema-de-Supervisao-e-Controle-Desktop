@@ -16,7 +16,12 @@ class SerialConfigController(QDialog):
     worker_iniciado = Signal(object)
     worker_encerrado = Signal()
 
-    def __init__(self, parent=None, worker_ativo: SerialWorker | None = None, simular_sem_hardware: bool = False):
+    def __init__(
+        self,
+        parent=None,
+        worker_ativo: SerialWorker | None = None,
+        simular_sem_hardware: bool = False,
+    ):
         super().__init__(parent)
 
         self.ui = Ui_DialogSerial()
@@ -77,12 +82,20 @@ class SerialConfigController(QDialog):
         dados = self._dados_conexao()
 
         config_atual = carregar_ou_criar_config()
+        try:
+            baud_int = int(dados["baud_rate"])
+        except (TypeError, ValueError):
+            baud_int = int(config_atual.get("baud_rate", 9600))
+
+        taxa_amostragem = config_atual.get("taxa_amostragem_ms", 1000)
         config_atual["porta_com"] = dados["porta"]
-        config_atual["baud_rate"] = int(dados["baud_rate"])
+        config_atual["baud_rate"] = baud_int
+        config_atual["taxa_amostragem_ms"] = taxa_amostragem
+        dados["taxa_amostragem_ms"] = taxa_amostragem
         salvar_config(config_atual)
 
         self.ui.lblStatusValor.setText(
-            f"Conectando ({dados['porta']} @ {dados['baud_rate']} bps)..."
+            f"Conectando ({dados['porta']} @ {baud_int} bps)..."
         )
         self.ui.lblStatusValor.setStyleSheet("color: #d68910; font-weight: bold;")
         self.ui.btnConectar.setEnabled(False)
@@ -90,7 +103,7 @@ class SerialConfigController(QDialog):
         # parent=None evita que o worker seja destruído ao fechar este QDialog
         self.worker = SerialWorker(
             porta=dados["porta"],
-            baud_rate=int(dados["baud_rate"]),
+            baud_rate=baud_int,
             timeout=float(dados["timeout"]),
             simular_sem_hardware=self.simular_sem_hardware,
             parent=None,
