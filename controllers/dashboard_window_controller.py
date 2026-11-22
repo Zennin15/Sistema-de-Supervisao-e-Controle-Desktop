@@ -10,6 +10,7 @@ from matplotlib.figure import Figure
 
 from database.connection import Database
 from logs.logger import registrar_erro_emergencia
+from models.config_manager import carregar_ou_criar_config
 from models.repository import (
     ActuatorRepository,
     Repository,
@@ -46,10 +47,26 @@ class DashboardWindowController(QDialog):
         self.ui.botaoCorteEmergencial.clicked.connect(self.acionar_corte_emergencial)
         self.ui.sliderLimiteAlerta.valueChanged.connect(self.ajustar_limite_alerta)
 
+        intervalo_ms = self._obter_intervalo_amostragem_ms()
         self.timer_telemetria = QTimer(self)
-        self.timer_telemetria.setInterval(self.INTERVALO_ATUALIZACAO_MS)
+        self.timer_telemetria.setInterval(intervalo_ms)
         self.timer_telemetria.timeout.connect(self.atualizar_telemetria)
         self.timer_telemetria.start()
+
+    def _obter_intervalo_amostragem_ms(self) -> int:
+        """Lê taxa_amostragem_ms do config.json com fallback para INTERVALO_ATUALIZACAO_MS."""
+        try:
+            config_json = carregar_ou_criar_config()
+            intervalo_ms = int(
+                config_json.get("taxa_amostragem_ms", self.INTERVALO_ATUALIZACAO_MS)
+            )
+            if intervalo_ms > 0:
+                return intervalo_ms
+        except (TypeError, ValueError, OSError) as exc:
+            logging.warning(
+                "Não foi possível ler taxa_amostragem_ms do config.json: %s", exc
+            )
+        return self.INTERVALO_ATUALIZACAO_MS
 
     def _carregar_estado_persistido(self):
         """Sincroniza o estado inicial do disjuntor com o banco."""
@@ -232,8 +249,7 @@ class DashboardWindowController(QDialog):
 
         cor = "#D32F2F" if acima_do_limite else "#00E676"
         self.ui.lcdPotencia.setStyleSheet(
-            f"QLCDNumber {{ background-color: #101820; color: {cor}; "
-            f"border: 2px solid {cor}; border-radius: 6px; }}"
+            f"QLCDNumber {{ background-color: #101820; color: {cor}; border: 2px solid {cor}; border-radius: 6px; }}"
         )
 
         if acima_do_limite and not self._alerta_ativo:
