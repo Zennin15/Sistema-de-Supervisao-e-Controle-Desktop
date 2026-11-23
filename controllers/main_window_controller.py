@@ -12,8 +12,10 @@ from PySide6.QtWidgets import (
 )
 
 from controllers.dashboard_window_controller import DashboardWindowController
+from controllers.database_worker import DatabaseWorker
 from controllers.limits_configuration_window_controller import LimitsConfigurationWindowController
 from controllers.serial_controller import SerialConfigController
+from controllers.serial_worker import SerialWorker
 from models.repository import (
     ActuatorRepository,
     LimitRepository,
@@ -29,6 +31,17 @@ class MainWindowController(QMainWindow):
 
         self.ui = Ui_MainWindow()
         self.ui.setupUi(self)
+
+        # Referência persistente à SerialWorker ativa (sobrevive ao fechamento
+        # do diálogo de configuração), usada para refletir o estado real da
+        # conexão ao reabrir a tela e para alimentar o dashboard com dados reais.
+        self.serial_worker_ativo: SerialWorker | None = None
+
+        # Thread dedicada de persistência: grava continuamente as leituras de
+        # telemetria recebidas da SerialWorker, sem bloquear a GUI.
+        self.database_worker = DatabaseWorker(self)
+        self.database_worker.erro_persistencia.connect(self._on_erro_persistencia)
+        self.database_worker.start()
 
         try:
             self.limites_registrados = LimitRepository.listar_todos()
@@ -60,6 +73,13 @@ class MainWindowController(QMainWindow):
             self.ui.pushButton_3.clicked.connect(self.abrir_dashboard)
         if hasattr(self.ui, "pushButton_2"):
             self.ui.pushButton_2.clicked.connect(self.abrir_configuracao_serial)
+
+    def closeEvent(self, event):
+        """Encerra as threads em segundo plano com segurança ao fechar o app."""
+        if self.serial_worker_ativo is not None and self.serial_worker_ativo.isRunning():
+            self.serial_worker_ativo.parar()
+        self.database_worker.parar()
+        super().closeEvent(event)
 
     def showEvent(self, event):
         """Atualiza a tabela diretamente do repositório sempre que a janela abre."""
@@ -184,16 +204,45 @@ class MainWindowController(QMainWindow):
             )
 
     def abrir_dashboard(self):
-        dashboard = DashboardWindowController(parent=self)
+        dashboard = DashboardWindowController(parent=self, worker_ativo=self.serial_worker_ativo)
         dashboard.historico_atualizado.connect(self.carregar_historico)
         dashboard.exec()
         self.carregar_historico()
 
     def abrir_configuracao_serial(self):
-        dialog = SerialConfigController(parent=self)
+        dialog = SerialConfigController(parent=self, worker_ativo=self.serial_worker_ativo)
         if hasattr(dialog, "status_alterado"):
             dialog.status_alterado.connect(self._registrar_status_serial)
+        dialog.worker_iniciado.connect(self._on_worker_serial_iniciado)
         dialog.exec()
+
+    def _on_worker_serial_iniciado(self, worker: SerialWorker):
+        """Passa a escutar a worker diretamente, independente do diálogo estar aberto."""
+        self.serial_worker_ativo = worker
+        worker.conexao_alterada.connect(self._on_conexao_serial_alterada)
+        worker.erro_serial.connect(self._on_erro_serial_worker)
+        # Cada leitura válida decodificada passa a ser gravada continuamente
+        # no SQLite pela DatabaseWorker, em segundo plano (sem travar a GUI).
+        worker.leitura_para_gravar.connect(self.database_worker.gravar_leitura_telemetria)
+        # Confirmação visível (no histórico) de que um comando de corte/rearme
+        # foi de fato escrito na porta serial - ajuda a diagnosticar se a
+        # placa não reagiu por falta de envio ou por outro motivo.
+        worker.comando_enviado.connect(self._on_comando_serial_enviado)
+
+    def _on_comando_serial_enviado(self, comando: str):
+        self.registrar_evento("Comando serial enviado", f"Comando enviado à placa: {comando}")
+
+    def _on_erro_persistencia(self, titulo: str, mensagem: str):
+        QMessageBox.warning(self, titulo, mensagem)
+
+    def _on_conexao_serial_alterada(self, conectado: bool, mensagem: str):
+        if not conectado and self.sender() is self.serial_worker_ativo:
+            self.serial_worker_ativo = None
+
+    def _on_erro_serial_worker(self, mensagem: str):
+        """Exibe apenas um aviso na tela; nunca deixa a exceção se propagar
+        (ex.: cabo USB removido fisicamente durante a comunicação)."""
+        QMessageBox.warning(self, "Aviso de Comunicação Serial", mensagem)
 
     def _registrar_status_serial(self, conectado: bool, dados: dict):
         status = "Conexão serial estabelecida" if conectado else "Conexão serial encerrada"

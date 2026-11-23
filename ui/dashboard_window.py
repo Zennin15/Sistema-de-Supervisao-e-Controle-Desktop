@@ -175,7 +175,7 @@ class Ui_DashboardWindow(object):
         self.sliderLimiteAlerta.setObjectName(u"sliderLimiteAlerta")
         self.sliderLimiteAlerta.setMinimumSize(QSize(260, 0))
         self.sliderLimiteAlerta.setMinimum(500)
-        self.sliderLimiteAlerta.setMaximum(3000)
+        self.sliderLimiteAlerta.setMaximum(7500)
         self.sliderLimiteAlerta.setSingleStep(50)
         self.sliderLimiteAlerta.setPageStep(100)
         self.sliderLimiteAlerta.setValue(1500)

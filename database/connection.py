@@ -1,10 +1,11 @@
 from pathlib import Path
 import sqlite3
 
+
 class Database:
     """Gerencia conexões e inicialização do banco SQLite do Smart Grid."""
 
-    DB_NAME = str(Path(__file__).resolve().parents[1] / "data" / "smartgrid.db")
+    DB_NAME = str(Path(__file__).resolve().parents[1] / "smartgrid.db")
 
     @classmethod
     def get_connection(cls) -> sqlite3.Connection:
@@ -88,6 +89,18 @@ class Database:
                 descricao TEXT NOT NULL DEFAULT '',
                 ultima_atualizacao TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP,
                 FOREIGN KEY(atuador_id) REFERENCES atuadores(id) ON DELETE CASCADE
+            )
+        """
+
+    @staticmethod
+    def _sql_leituras() -> str:
+        return """
+            CREATE TABLE IF NOT EXISTS leituras (
+                id INTEGER PRIMARY KEY AUTOINCREMENT,
+                timestamp TEXT NOT NULL,
+                tensao REAL NOT NULL,
+                corrente REAL NOT NULL,
+                potencia REAL NOT NULL
             )
         """
 
@@ -236,6 +249,7 @@ class Database:
                 conn.execute(cls._sql_atuadores())
                 conn.execute(cls._sql_historico())
                 conn.execute(cls._sql_limites())
+                conn.execute(cls._sql_leituras())
 
                 conn.execute(
                     """

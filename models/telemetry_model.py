@@ -55,6 +55,11 @@ class TelemetryModel:
         # --- Limite de alerta de consumo (ajustável pela View) ---
         self.limite_alerta_watts = self.LIMITE_ALERTA_PADRAO_W
 
+        # --- Limites de segurança de tensão/corrente (vindos do cadastro de
+        # limites); None enquanto não houver nenhuma regra configurada ---
+        self.limite_tensao_maxima: float | None = None
+        self.limite_corrente_maxima: float | None = None
+
         # Requisito: o gráfico deve abrir com histórico pré-carregado
         # (curva de demanda simulada das últimas 24 horas)
         self._pre_carregar_curva_24h()
@@ -69,11 +74,11 @@ class TelemetryModel:
     def registrar_amostra(self, tensao: float, corrente: float) -> dict:
         """
         Calcula a potência e atualiza o histórico.
-        Se o disjuntor estiver aberto, a carga foi cortada: V/I/P são zerados,
-        independentemente do valor lido/simulado.
+        Se o disjuntor estiver aberto, a carga foi cortada: corrente e potência
+        são zeradas; a tensão lida (fonte ainda energizada) continua valendo.
         """
         if not self.disjuntor_fechado:
-            tensao, corrente = 0.0, 0.0
+            corrente = 0.0
 
         potencia = self.calcular_potencia(tensao, corrente)
 
@@ -94,24 +99,14 @@ class TelemetryModel:
             "potencia": potencia,
         }
 
-    def gerar_amostra_simulada(self) -> dict:
-        """Gera uma amostra simulada de V e I com ruído, imitando um sensor
-        real (ACS712 / ZMPT101B), e registra essa amostra."""
-        tensao = round(random.uniform(
-            self.TENSAO_NOMINAL - 8, self.TENSAO_NOMINAL + 8), 2)
-        corrente = round(random.uniform(
-            max(0.0, self.CORRENTE_NOMINAL - 1.5), self.CORRENTE_NOMINAL + 1.5), 2)
-
-        return self.registrar_amostra(tensao, corrente)
-
     # ------------------------------------------------------------------
     # Disjuntor / Chave de proteção
     # ------------------------------------------------------------------
     def abrir_disjuntor(self) -> None:
-        """Executa o corte emergencial de carga (relé): abre o disjuntor,
-        cortando a energia — V, I e P passam a ser 0."""
+        """Executa o corte emergencial de carga (relé): abre o disjuntor;
+        corrente e potência passam a ser 0 e a tensão da fonte é mantida."""
         self.disjuntor_fechado = False
-        self.registrar_amostra(0.0, 0.0)
+        self.registrar_amostra(self.tensao_atual, 0.0)
 
     def fechar_disjuntor(self) -> None:
         """Rearma/fecha o disjuntor, restabelecendo a energia."""
@@ -137,6 +132,29 @@ class TelemetryModel:
         return self.potencia_atual > self.limite_alerta_watts
 
     # ------------------------------------------------------------------
+    # Limites de segurança de tensão/corrente
+    # ------------------------------------------------------------------
+    def set_limites_seguranca(
+        self, tensao_maxima: float | None, corrente_maxima: float | None
+    ) -> None:
+        """Define os limites de segurança (cadastro de limites); None desativa
+        o respectivo alerta."""
+        self.limite_tensao_maxima = tensao_maxima
+        self.limite_corrente_maxima = corrente_maxima
+
+    def tensao_acima_do_limite(self) -> bool:
+        return (
+            self.limite_tensao_maxima is not None
+            and self.tensao_atual > self.limite_tensao_maxima
+        )
+
+    def corrente_acima_do_limite(self) -> bool:
+        return (
+            self.limite_corrente_maxima is not None
+            and self.corrente_atual > self.limite_corrente_maxima
+        )
+
+    # ------------------------------------------------------------------
     # Histórico / consultas para a View
     # ------------------------------------------------------------------
     def _pre_carregar_curva_24h(self) -> None:
@@ -149,6 +167,12 @@ class TelemetryModel:
             tensao = round(random.uniform(
                 self.TENSAO_NOMINAL - 5, self.TENSAO_NOMINAL + 5), 2)
             self.registrar_amostra(tensao, max(0.0, corrente))
+
+        # A curva simulada só alimenta o gráfico; os indicadores ao vivo
+        # começam zerados até chegar a primeira leitura real.
+        self.tensao_atual = 0.0
+        self.corrente_atual = 0.0
+        self.potencia_atual = 0.0
 
     def get_historico(self) -> dict:
         """Retorna o histórico completo (listas) usado para plotar o gráfico."""
