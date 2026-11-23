@@ -83,10 +83,9 @@ class SerialWorker(QThread):
                 raise TimeoutError("Placa nao confirmou o comando !S.")
 
             if self.baud_rate != 9600:
-                self._serial_conn.close()
                 time.sleep(0.05)
+                # Reabrir a porta reseta o Uno (DTR); só troca a taxa.
                 self._serial_conn.baudrate = self.baud_rate
-                self._serial_conn.open()
                 self._serial_conn.reset_input_buffer()
 
             return True

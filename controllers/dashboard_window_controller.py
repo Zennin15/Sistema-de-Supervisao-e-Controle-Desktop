@@ -44,6 +44,7 @@ class DashboardWindowController(QDialog):
         self._alerta_corrente_ativo = False
         self.worker_ativo = worker_ativo
         self._amostra_pendente = None
+        self._leitura_bruta = None
         self._modo_grafico = "tempo_real"
         self._worker_historico = None
         self._carregar_estado_persistido()
@@ -183,6 +184,7 @@ class DashboardWindowController(QDialog):
 
     def receber_amostra_real(self, tensao: float, corrente: float):
         """Atualiza indicadores e gráfico com a amostra real lida da porta serial."""
+        self._leitura_bruta = (tensao, corrente)
         amostra = self.model.registrar_amostra(tensao, corrente)
         self._atualizar_indicadores(
             amostra["tensao"], amostra["corrente"], amostra["potencia"]
@@ -196,7 +198,11 @@ class DashboardWindowController(QDialog):
 
             status = f"Status: última amostra serial #{amostra['tempo']}"
             if not self.model.disjuntor_fechado:
-                status = "Status: disjuntor ABERTO - carga cortada"
+                potencia = self.model.calcular_potencia(*self._leitura_bruta)
+                status = (
+                    f"Status: disjuntor ABERTO - leitura na entrada: {potencia:.0f} W "
+                    f"(limite {self.model.limite_alerta_watts:.0f} W)"
+                )
             self.ui.labelStatus.setText(status)
 
     # ------------------------------------------------------------------
@@ -255,7 +261,28 @@ class DashboardWindowController(QDialog):
     def acionar_corte_emergencial(self):
         """Acionado manualmente pelo botão - alterna o estado do disjuntor."""
         abrir = self.model.disjuntor_fechado
+        if not abrir and not self._pode_rearmar():
+            return
         self._executar_corte(abrir, automatico=False)
+
+    def _pode_rearmar(self) -> bool:
+        """Com o disjuntor aberto o Model zera V/I; a leitura bruta mostra se
+        a carga ainda está acima do limite (religar só dispararia o corte)."""
+        worker_ok = self.worker_ativo is not None and self.worker_ativo.isRunning()
+        if self._leitura_bruta is None or not worker_ok:
+            return True
+        potencia = self.model.calcular_potencia(*self._leitura_bruta)
+        limite = self.model.limite_alerta_watts
+        if potencia <= limite:
+            return True
+        QMessageBox.warning(
+            self,
+            "Rearme bloqueado",
+            f"A leitura atual na entrada é {potencia:.0f} W, acima do limite de "
+            f"alerta ({limite:.0f} W). Reduza a carga ou ajuste o limite e tente "
+            "rearmar novamente.",
+        )
+        return False
 
     def _executar_corte_automatico(self):
         """Acionado automaticamente quando a potência ultrapassa o limite

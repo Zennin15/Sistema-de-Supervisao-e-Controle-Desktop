@@ -74,11 +74,11 @@ class TelemetryModel:
     def registrar_amostra(self, tensao: float, corrente: float) -> dict:
         """
         Calcula a potência e atualiza o histórico.
-        Se o disjuntor estiver aberto, a carga foi cortada: V/I/P são zerados,
-        independentemente do valor lido/simulado.
+        Se o disjuntor estiver aberto, a carga foi cortada: corrente e potência
+        são zeradas; a tensão lida (fonte ainda energizada) continua valendo.
         """
         if not self.disjuntor_fechado:
-            tensao, corrente = 0.0, 0.0
+            corrente = 0.0
 
         potencia = self.calcular_potencia(tensao, corrente)
 
@@ -103,10 +103,10 @@ class TelemetryModel:
     # Disjuntor / Chave de proteção
     # ------------------------------------------------------------------
     def abrir_disjuntor(self) -> None:
-        """Executa o corte emergencial de carga (relé): abre o disjuntor,
-        cortando a energia — V, I e P passam a ser 0."""
+        """Executa o corte emergencial de carga (relé): abre o disjuntor;
+        corrente e potência passam a ser 0 e a tensão da fonte é mantida."""
         self.disjuntor_fechado = False
-        self.registrar_amostra(0.0, 0.0)
+        self.registrar_amostra(self.tensao_atual, 0.0)
 
     def fechar_disjuntor(self) -> None:
         """Rearma/fecha o disjuntor, restabelecendo a energia."""
@@ -167,6 +167,12 @@ class TelemetryModel:
             tensao = round(random.uniform(
                 self.TENSAO_NOMINAL - 5, self.TENSAO_NOMINAL + 5), 2)
             self.registrar_amostra(tensao, max(0.0, corrente))
+
+        # A curva simulada só alimenta o gráfico; os indicadores ao vivo
+        # começam zerados até chegar a primeira leitura real.
+        self.tensao_atual = 0.0
+        self.corrente_atual = 0.0
+        self.potencia_atual = 0.0
 
     def get_historico(self) -> dict:
         """Retorna o histórico completo (listas) usado para plotar o gráfico."""

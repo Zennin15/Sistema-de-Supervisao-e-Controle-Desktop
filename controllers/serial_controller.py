@@ -5,6 +5,11 @@ from controllers.serial_worker import SerialWorker
 from models.config_manager import carregar_ou_criar_config, salvar_config
 from ui.serial_config_dialog import Ui_DialogSerial
 
+try:
+    from serial.tools import list_ports
+except ImportError:
+    list_ports = None
+
 
 class SerialConfigController(QDialog):
     """
@@ -50,14 +55,33 @@ class SerialConfigController(QDialog):
         self.ui.btnConectar.clicked.connect(self.conectar)
         self.ui.btnDesconectar.clicked.connect(self.desconectar)
 
+    @staticmethod
+    def _listar_portas() -> list[str]:
+        if list_ports is None:
+            return []
+        portas = [p.device for p in list_ports.comports()]
+        return sorted(
+            portas,
+            key=lambda n: (int(n[3:]) if n.upper().startswith("COM") and n[3:].isdigit() else 9999, n),
+        )
+
+    def _preencher_portas(self, porta_salva: str):
+        portas = self._listar_portas()
+        if porta_salva and porta_salva not in portas:
+            portas.append(porta_salva)
+
+        self.ui.cbPortaCom.clear()
+        self.ui.cbPortaCom.addItems(portas)
+
+        index_porta = self.ui.cbPortaCom.findText(porta_salva)
+        if index_porta >= 0:
+            self.ui.cbPortaCom.setCurrentIndex(index_porta)
+
     def carregar_configuracoes(self):
         config = carregar_ou_criar_config()
 
         if hasattr(self.ui, "cbPortaCom"):
-            porta_salva = config.get("porta_com", "COM3")
-            index_porta = self.ui.cbPortaCom.findText(porta_salva)
-            if index_porta >= 0:
-                self.ui.cbPortaCom.setCurrentIndex(index_porta)
+            self._preencher_portas(config.get("porta_com", "COM3"))
 
         if hasattr(self.ui, "cbBaudRate"):
             baud_salvo = str(config.get("baud_rate", 9600))
