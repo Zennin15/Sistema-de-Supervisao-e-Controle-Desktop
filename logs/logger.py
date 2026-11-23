@@ -1,8 +1,14 @@
+import os
 import logging
+
+LOG_DIR = "logs"
+LOG_FILE = os.path.join(LOG_DIR, "smartgrid.log")
+
+os.makedirs(LOG_DIR, exist_ok=True)
 
 # Configuração do subsistema de auditoria e diagnóstico (smartgrid.log)
 logging.basicConfig(
-    filename="smartgrid.log",
+    filename=LOG_FILE,
     level=logging.INFO,
     format="%(asctime)s [%(levelname)s] %(message)s",
     datefmt="%Y-%m-%d %H:%M:%S",

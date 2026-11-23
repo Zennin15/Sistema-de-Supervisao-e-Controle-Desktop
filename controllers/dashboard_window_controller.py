@@ -59,23 +59,26 @@ class DashboardWindowController(QDialog):
         self.ui.botaoCorteEmergencial.clicked.connect(self.acionar_corte_emergencial)
         self.ui.sliderLimiteAlerta.valueChanged.connect(self.ajustar_limite_alerta)
 
-        # A serial pode entregar pacotes bem mais rápido do que a tela precisa
-        # redesenhar. O recebimento fica barato (só guarda a última amostra) e
-        # este timer, no ritmo configurado (taxa_amostragem_ms), é quem de fato
-        # processa e redesenha - evita sobrecarregar o matplotlib/GUI thread.
-        taxa_amostragem_ms = carregar_ou_criar_config().get("taxa_amostragem_ms", 1000)
+        intervalo_ms = self._obter_intervalo_amostragem_ms()
         self.timer_telemetria = QTimer(self)
-        self.timer_telemetria.setInterval(max(100, int(taxa_amostragem_ms)))
-        self.timer_telemetria.timeout.connect(self._processar_amostra_pendente)
+        self.timer_telemetria.setInterval(intervalo_ms)
+        self.timer_telemetria.timeout.connect(self.atualizar_telemetria)
         self.timer_telemetria.start()
 
-        if self.worker_ativo is not None and self.worker_ativo.isRunning():
-            self.worker_ativo.dados_recebidos.connect(self._on_pacote_serial_recebido)
-            self.ui.labelStatus.setText("Status: aguardando dados da porta serial...")
-        else:
-            self.ui.labelStatus.setText(
-                "Status: sem conexão serial - abra Configurações para conectar"
+    def _obter_intervalo_amostragem_ms(self) -> int:
+        """Lê taxa_amostragem_ms do config.json com fallback para INTERVALO_ATUALIZACAO_MS."""
+        try:
+            config_json = carregar_ou_criar_config()
+            intervalo_ms = int(
+                config_json.get("taxa_amostragem_ms", self.INTERVALO_ATUALIZACAO_MS)
             )
+            if intervalo_ms > 0:
+                return intervalo_ms
+        except (TypeError, ValueError, OSError) as exc:
+            logging.warning(
+                "Não foi possível ler taxa_amostragem_ms do config.json: %s", exc
+            )
+        return self.INTERVALO_ATUALIZACAO_MS
 
     def _carregar_estado_persistido(self):
         """Sincroniza o estado inicial do disjuntor com o banco."""
@@ -431,8 +434,7 @@ class DashboardWindowController(QDialog):
 
         cor = "#D32F2F" if acima_do_limite else "#00E676"
         self.ui.lcdPotencia.setStyleSheet(
-            f"QLCDNumber {{ background-color: #101820; color: {cor}; "
-            f"border: 2px solid {cor}; border-radius: 6px; }}"
+            f"QLCDNumber {{ background-color: #101820; color: {cor}; border: 2px solid {cor}; border-radius: 6px; }}"
         )
 
         alarme_novo = acima_do_limite and not self._alerta_ativo
