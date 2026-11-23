@@ -7,7 +7,7 @@ class ConsultaHistoricoWorker(QThread):
 
     def __init__(
         self,
-        db_path: str = "smartgrid.db",
+        db_path: str | None = None,
         tipo_filtro: str = "ultimas_n",
         limite_n: int = 100,
         data_inicio: str = "",

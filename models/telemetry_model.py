@@ -55,6 +55,11 @@ class TelemetryModel:
         # --- Limite de alerta de consumo (ajustável pela View) ---
         self.limite_alerta_watts = self.LIMITE_ALERTA_PADRAO_W
 
+        # --- Limites de segurança de tensão/corrente (vindos do cadastro de
+        # limites); None enquanto não houver nenhuma regra configurada ---
+        self.limite_tensao_maxima: float | None = None
+        self.limite_corrente_maxima: float | None = None
+
         # Requisito: o gráfico deve abrir com histórico pré-carregado
         # (curva de demanda simulada das últimas 24 horas)
         self._pre_carregar_curva_24h()
@@ -94,16 +99,6 @@ class TelemetryModel:
             "potencia": potencia,
         }
 
-    def gerar_amostra_simulada(self) -> dict:
-        """Gera uma amostra simulada de V e I com ruído, imitando um sensor
-        real (ACS712 / ZMPT101B), e registra essa amostra."""
-        tensao = round(random.uniform(
-            self.TENSAO_NOMINAL - 8, self.TENSAO_NOMINAL + 8), 2)
-        corrente = round(random.uniform(
-            max(0.0, self.CORRENTE_NOMINAL - 1.5), self.CORRENTE_NOMINAL + 1.5), 2)
-
-        return self.registrar_amostra(tensao, corrente)
-
     # ------------------------------------------------------------------
     # Disjuntor / Chave de proteção
     # ------------------------------------------------------------------
@@ -135,6 +130,29 @@ class TelemetryModel:
     def consumo_acima_do_limite(self) -> bool:
         """Indica se a potência atual ultrapassou o limite de alerta."""
         return self.potencia_atual > self.limite_alerta_watts
+
+    # ------------------------------------------------------------------
+    # Limites de segurança de tensão/corrente
+    # ------------------------------------------------------------------
+    def set_limites_seguranca(
+        self, tensao_maxima: float | None, corrente_maxima: float | None
+    ) -> None:
+        """Define os limites de segurança (cadastro de limites); None desativa
+        o respectivo alerta."""
+        self.limite_tensao_maxima = tensao_maxima
+        self.limite_corrente_maxima = corrente_maxima
+
+    def tensao_acima_do_limite(self) -> bool:
+        return (
+            self.limite_tensao_maxima is not None
+            and self.tensao_atual > self.limite_tensao_maxima
+        )
+
+    def corrente_acima_do_limite(self) -> bool:
+        return (
+            self.limite_corrente_maxima is not None
+            and self.corrente_atual > self.limite_corrente_maxima
+        )
 
     # ------------------------------------------------------------------
     # Histórico / consultas para a View

@@ -92,6 +92,18 @@ class Database:
             )
         """
 
+    @staticmethod
+    def _sql_leituras() -> str:
+        return """
+            CREATE TABLE IF NOT EXISTS leituras (
+                id INTEGER PRIMARY KEY AUTOINCREMENT,
+                timestamp TEXT NOT NULL,
+                tensao REAL NOT NULL,
+                corrente REAL NOT NULL,
+                potencia REAL NOT NULL
+            )
+        """
+
     @classmethod
     def _migrar_esquema_antigo(cls) -> None:
         """Recria tabelas antigas para aplicar as restrições sem perder dados."""
@@ -237,6 +249,7 @@ class Database:
                 conn.execute(cls._sql_atuadores())
                 conn.execute(cls._sql_historico())
                 conn.execute(cls._sql_limites())
+                conn.execute(cls._sql_leituras())
 
                 conn.execute(
                     """

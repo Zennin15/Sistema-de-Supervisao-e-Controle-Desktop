@@ -4,6 +4,7 @@ import sqlite3
 from PySide6.QtCore import QThread, Signal
 
 from logs.logger import registrar_erro_emergencia
+from models.historico_repository import HistoricoRepository
 from models.repository import (
     ActuatorRepository,
     LimitRepository,
@@ -32,6 +33,7 @@ class DatabaseWorker(QThread):
         self._fila = queue.Queue()
         self._executando = True
         self._parar_sentinel = object()
+        self._historico_repo = HistoricoRepository()
 
     def _enfileirar(self, comando: str, payload=None):
         if not self._executando:
@@ -141,15 +143,16 @@ class DatabaseWorker(QThread):
         elif comando == "gravar_telemetria":
             tensao = payload.get("tensao")
             corrente = payload.get("corrente")
-            atuador_id = ActuatorRepository.obter_id_por_tag(TAG_DISJUNTOR_PRINCIPAL)
-            descricao = f"Tensão={tensao} V, Corrente={corrente} A"
-            Repository.registrar_evento(
-                tipo_evento="Telemetria",
-                descricao=descricao,
-                valor_medido=corrente,
-                atuador_id=atuador_id,
+            potencia = payload.get("potencia")
+            if potencia is None and tensao is not None and corrente is not None:
+                potencia = tensao * corrente
+            # Histórico de leituras dedicado (tabela 'leituras'): usado pelas
+            # consultas de histórico (últimas N / intervalo de datas), em vez
+            # de misturar amostras de telemetria com eventos pontuais.
+            self._historico_repo.registrar_leitura(tensao, corrente, potencia)
+            self.evento_gravado.emit(
+                "Telemetria", f"Tensão={tensao} V, Corrente={corrente} A", corrente
             )
-            self.evento_gravado.emit("Telemetria", descricao, corrente)
 
         elif comando == "acao_disjuntor":
             from database.connection import Database

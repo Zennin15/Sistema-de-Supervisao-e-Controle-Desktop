@@ -1,5 +1,5 @@
 from PySide6.QtCore import Signal
-from PySide6.QtWidgets import QDialog, QMessageBox
+from PySide6.QtWidgets import QDialog
 
 from controllers.serial_worker import SerialWorker
 from models.config_manager import carregar_ou_criar_config, salvar_config
@@ -39,6 +39,11 @@ class SerialConfigController(QDialog):
                 f"Conectado ({self.worker.porta} @ {self.worker.baud_rate} bps)"
             )
             self.ui.lblStatusValor.setStyleSheet("color: #27ae60; font-weight: bold;")
+            # Reconecta aos sinais da worker já em execução para que esta janela
+            # (reaberta) continue refletindo o estado real da conexão.
+            self.worker.conexao_alterada.connect(self._on_conexao_alterada)
+            self.worker.erro_serial.connect(self._on_erro_serial)
+            self.worker.finished.connect(self._on_worker_finalizado)
         else:
             self._definir_controles_ativos(False)
 
@@ -106,6 +111,7 @@ class SerialConfigController(QDialog):
             baud_rate=baud_int,
             timeout=float(dados["timeout"]),
             simular_sem_hardware=self.simular_sem_hardware,
+            taxa_amostragem_ms=int(taxa_amostragem),
             parent=None,
         )
         self.worker.conexao_alterada.connect(self._on_conexao_alterada)
@@ -133,9 +139,13 @@ class SerialConfigController(QDialog):
         self.status_alterado.emit(conectado, dados)
 
     def _on_erro_serial(self, mensagem: str):
+        # O aviso ao usuário é responsabilidade da janela principal (persistente),
+        # que permanece escutando a worker mesmo com este diálogo fechado.
+        # Aqui apenas refletimos o estado desconectado nesta tela.
         self._definir_controles_ativos(False)
+        self.ui.lblStatusValor.setText(f"Desconectado: {mensagem}")
+        self.ui.lblStatusValor.setStyleSheet("color: #c0392b; font-weight: bold;")
         self.worker_encerrado.emit()
-        QMessageBox.warning(self, "Erro de Comunicação Serial", mensagem)
 
     def _on_worker_finalizado(self):
         self.worker = None

@@ -47,15 +47,17 @@ def decodificar_telemetria(linha: str) -> dict | None:
         corrente = round((raw_corrente / 1023.0) * 30.0, 2)
         potencia = round(tensao * corrente, 2)
 
-        disjuntor_1 = int(partes[3]) == 1
-        disjuntor_2 = int(partes[4]) == 1
+        # Campos 3 e 4 do pacote conforme o protocolo oficial da placa:
+        # <STATUS_RELE> (estado real do relé/carga) e <STATUS_BOTAO>.
+        status_rele = int(partes[3]) == 1
+        status_botao = int(partes[4]) == 1
 
         return {
             "tensao": tensao,
             "corrente": corrente,
             "potencia": potencia,
-            "disjuntor_1": disjuntor_1,
-            "disjuntor_2": disjuntor_2,
+            "status_rele": status_rele,
+            "status_botao": status_botao,
             "timestamp": time.strftime("%Y-%m-%d %H:%M:%S"),
         }
     except (ValueError, IndexError):
