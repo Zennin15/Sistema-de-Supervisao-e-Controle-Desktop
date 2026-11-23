@@ -200,14 +200,7 @@ class SerialWorker(QThread):
                         self.msleep(20)
             except Exception as exc:
                 if self._executando:
-                    if isinstance(exc, OSError):
-                        mensagem = (
-                            f"Conexão com a placa perdida em {self.porta}. "
-                            "Verifique o cabo USB e conecte novamente."
-                        )
-                    else:
-                        mensagem = f"Erro de comunicacao em {self.porta}: {exc}"
-                    self.erro_serial.emit(mensagem)
+                    self.erro_serial.emit(f"Erro de comunicacao em {self.porta}: {exc}")
                 break
 
         self._fechar_porta()
@@ -218,18 +211,14 @@ class SerialWorker(QThread):
         self.wait(2000)
 
     def _fechar_porta(self):
-        conn = self._serial_conn
-        self._serial_conn = None
-        if conn is None:
-            return
-        try:
-            if conn.is_open:
-                conn.write(b"!P\r\n")
-                conn.flush()
-                time.sleep(0.03)
-        except Exception:
-            pass
-        try:
-            conn.close()
-        except Exception:
-            pass
+        if self._serial_conn is not None:
+            try:
+                if self._serial_conn.is_open:
+                    self._serial_conn.write(b"!P\r\n")
+                    self._serial_conn.flush()
+                    time.sleep(0.03)
+                    self._serial_conn.close()
+            except Exception:
+                pass
+            finally:
+                self._serial_conn = None
